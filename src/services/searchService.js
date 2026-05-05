@@ -5,6 +5,7 @@
 
 const API_BASE_URL = 'http://localhost:8080/transparency-portal/api/v1';
 const SEARCH_ENDPOINT = `${API_BASE_URL}/productsapi/search`;
+
 const TIMEOUT_DURATION = 10000; // 10 seconds timeout
 
 /**
