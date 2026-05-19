@@ -1,80 +1,83 @@
 /**
  * Search Service
- * Handles all API calls related to product search
+ * Handles API calls for searching and fetching product data.
  */
-
-const API_BASE_URL = 'http://localhost:8080/transparency-portal/api/v1';
+const API_BASE_URL = "http://localhost:8080/transparency-portal/api/v1";
 const SEARCH_ENDPOINT = `${API_BASE_URL}/productsapi/search`;
-
-const TIMEOUT_DURATION = 10000; // 10 seconds timeout
+const ALL_PRODUCTS_ENDPOINT = `${API_BASE_URL}/productsapi/get-all-products`;
+const TIMEOUT_DURATION_MS = 10000;
 
 /**
- * Create an AbortController with timeout
- * @param {number} timeoutMs - Timeout duration in milliseconds
- * @returns {AbortController} - Abort controller instance
+ * Perform a JSON fetch request with timeout handling.
+ * @param {string} endpoint - URL to request.
+ * @param {RequestInit} [options] - Fetch configuration.
+ * @returns {Promise<any>} - Parsed JSON response.
  */
-const createTimeoutController = (timeoutMs) => {
+const fetchJson = async (endpoint, options = {}) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  
-  return { controller, timeoutId };
-};
-
-/**
- * Search for products from the backend
- * @param {string} query - Search query string
- * @returns {Promise<Object>} - Search results from backend
- * @throws {Error} - Throws error with descriptive message for various failure scenarios
- */
-export const searchProducts = async (query) => {
-  // Validate input
-  if (!query || query.trim().length === 0) {
-    throw new Error('Search query cannot be empty');
-  }
-
-  const { controller, timeoutId } = createTimeoutController(TIMEOUT_DURATION);
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_DURATION_MS);
 
   try {
-    const response = await fetch(`${SEARCH_ENDPOINT}?query=${encodeURIComponent(query)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    const response = await fetch(endpoint, {
+      ...options,
       signal: controller.signal,
+      mode: "cors",
     });
 
-    // Clear timeout after response is received
     clearTimeout(timeoutId);
 
-    // Handle HTTP errors
     if (!response.ok) {
-      const errorMessage = `Server error: ${response.status} ${response.statusText}`;
-      throw new Error(errorMessage);
+      const fallbackText = await response.text().catch(() => "");
+      const message = `Server error ${response.status}: ${response.statusText}`;
+      throw new Error(fallbackText ? `${message} - ${fallbackText}` : message);
     }
 
-    // Parse and return response data
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
-    // Clear timeout in case of error
     clearTimeout(timeoutId);
 
-    // Handle specific error scenarios
-    if (error.name === 'AbortError') {
-      throw new Error(
-        `Request timeout after ${TIMEOUT_DURATION / 1000}s. The server is not responding. Please try again later.`
-      );
+    if (error.name === "AbortError") {
+      throw new Error(`Request timed out after ${TIMEOUT_DURATION_MS / 1000} seconds.`);
     }
 
     if (error instanceof TypeError) {
       throw new Error(
-        'Failed to connect to the server. Please check if the backend service is running on http://localhost:8080'
+        "Cannot connect to backend. Ensure the server is running on http://localhost:8080."
       );
     }
 
-    // Re-throw or provide generic error message
     throw error;
   }
 };
 
-export default { searchProducts };
+export const searchProducts = async (query) => {
+  if (!query || query.trim() === "") {
+    throw new Error("Search query cannot be empty.");
+  }
+
+  return await fetchJson(`${SEARCH_ENDPOINT}?name=${encodeURIComponent(query)}`, {
+    method: "GET",
+  });
+};
+
+export const getAllProducts = async () => {
+  return await fetchJson(ALL_PRODUCTS_ENDPOINT, {
+    method: "GET",
+  });
+};
+
+export const getProductById = async (productId) => {
+  if (!productId || `${productId}`.trim() === "") {
+    throw new Error("Product id is required to fetch the product details.");
+  }
+
+  return await fetchJson(`${SEARCH_ENDPOINT}/${encodeURIComponent(productId)}`, {
+    method: "GET",
+  });
+};
+
+export default {
+  searchProducts,
+  getAllProducts,
+  getProductById,
+};
