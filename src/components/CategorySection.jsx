@@ -6,8 +6,10 @@ import CategoryCard from "./CategoryCard";
  * Category Section
  * Props:
  * - categories (array)
+ * - selectedCategory (string)
+ * - onCategorySelect (function)
  */
-export default function CategorySection({ categories = [] }) {
+export default function CategorySection({ categories = [], selectedCategory, onCategorySelect }) {
   return (
     <section className="px-10 py-10">
       <h2 className="text-xl font-semibold mb-6">
@@ -20,6 +22,8 @@ export default function CategorySection({ categories = [] }) {
             key={cat.name}
             name={cat.name}
             icon={cat.icon}
+            selected={selectedCategory === cat.name}
+            onSelect={onCategorySelect}
           />
         ))}
       </div>

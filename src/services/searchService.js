@@ -2,9 +2,10 @@
  * Search Service
  * Handles API calls for searching and fetching product data.
  */
-const API_BASE_URL = "http://localhost:8080/transparency-portal/api/v1";
-const SEARCH_ENDPOINT = `${API_BASE_URL}/productsapi/search`;
-const ALL_PRODUCTS_ENDPOINT = `${API_BASE_URL}/productsapi/get-all-products`;
+const API_BASE_URL = "http://localhost:8080/transparency-portal/api/v1/productsapi";
+const SEARCH_ENDPOINT = `${API_BASE_URL}/search`;
+const ALL_PRODUCTS_ENDPOINT = `${API_BASE_URL}/get-all-products`;
+const CATEGORY_PRODUCTS_ENDPOINT = `${API_BASE_URL}/by-category`;
 const TIMEOUT_DURATION_MS = 10000;
 
 /**
@@ -66,12 +67,25 @@ export const getAllProducts = async () => {
   });
 };
 
+export const getProductsByCategory = async (category) => {
+  if (!category || `${category}`.trim() === "") {
+    throw new Error("Category is required to fetch products.");
+  }
+
+  return await fetchJson(
+    `${CATEGORY_PRODUCTS_ENDPOINT}?category=${encodeURIComponent(category)}`,
+    {
+      method: "GET",
+    }
+  );
+};
+
 export const getProductById = async (productId) => {
   if (!productId || `${productId}`.trim() === "") {
     throw new Error("Product id is required to fetch the product details.");
   }
 
-  return await fetchJson(`${SEARCH_ENDPOINT}/${encodeURIComponent(productId)}`, {
+  return await fetchJson(`${API_BASE_URL}/${encodeURIComponent(productId)}`, {
     method: "GET",
   });
 };
@@ -79,5 +93,6 @@ export const getProductById = async (productId) => {
 export default {
   searchProducts,
   getAllProducts,
+  getProductsByCategory,
   getProductById,
 };
