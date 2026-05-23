@@ -29,6 +29,14 @@ const fetchJson = async (endpoint, options = {}) => {
 
     if (!response.ok) {
       const fallbackText = await response.text().catch(() => "");
+      
+      // Handle PRD_001 error code (product not found)
+      if (response.status === 404 && fallbackText.includes("PRD_001")) {
+        const error = new Error("Product not found");
+        error.errorCode = "PRD_001";
+        throw error;
+      }
+      
       const message = `Server error ${response.status}: ${response.statusText}`;
       throw new Error(fallbackText ? `${message} - ${fallbackText}` : message);
     }

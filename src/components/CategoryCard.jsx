@@ -17,8 +17,8 @@ export default function CategoryCard({ name, icon, selected = false, onSelect })
           : "border-transparent bg-gray-100 hover:shadow"
       }`}
     >
-      <div className="text-3xl">{icon}</div>
-      <p className="mt-2 font-medium">{name}</p>
+      <div className="text-3xl flex justify-center">{icon}</div>
+      <p className="mt-2 font-medium text-center">{name}</p>
     </button>
   );
 }

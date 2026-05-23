@@ -19,12 +19,12 @@ export default function AlertMessage({ type = "info", title, message }) {
   const variant = variants[type] || variants.info;
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${variant.base}`} role="alert">
-      <div className="flex items-start gap-3">
-        <span className="text-xl">{variant.icon}</span>
-        <div>
-          <p className="font-semibold">{title}</p>
-          <p className="text-sm leading-6 text-current">{message}</p>
+    <div className={`rounded-2xl border p-4 sm:p-5 shadow-sm ${variant.base}`} role="alert">
+      <div className="flex items-start gap-3 sm:gap-4">
+        <span className="text-xl sm:text-2xl flex-shrink-0 mt-0.5">{variant.icon}</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm sm:text-base leading-tight mb-2">{title}</p>
+          <p className="text-xs sm:text-sm leading-relaxed text-current">{message}</p>
         </div>
       </div>
     </div>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import ProductCard from "./ProductCard";
+import AlertMessage from "./AlertMessage";
+import DismissibleAlert from "./DismissibleAlert";
 import { getAllProducts } from "../services/searchService";
 
 /**
@@ -15,10 +17,12 @@ import { getAllProducts } from "../services/searchService";
 export default function ProductSection({ title, products = [], onViewAll }) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [errorType, setErrorType] = useState(""); // "connectivity" or "product_not_found"
 
   const handleViewAll = async () => {
     setLoading(true);
     setErrorMessage("");
+    setErrorType("");
 
     try {
       const allProducts = await getAllProducts();
@@ -27,20 +31,28 @@ export default function ProductSection({ title, products = [], onViewAll }) {
         onViewAll(allProducts);
       }
     } catch (error) {
-      setErrorMessage(error?.message || "Unable to fetch products. Please try again.");
-      console.error("Failed to load all products:", error);
+      const errorMsg = error?.message || "Unable to fetch products. Please try again.";
+      
+      // Check for connectivity/timeout errors
+      if (errorMsg.includes("timeout") || errorMsg.includes("Cannot connect") || errorMsg.includes("TypeError")) {
+        setErrorType("connectivity");
+      } else {
+        setErrorType("product_not_found");
+      }
+      
+      setErrorMessage(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <section className="px-10 py-10">
+    <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-8 sm:py-10">
       {/* Section Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">{title}</h2>
+        <h2 className="text-lg sm:text-xl font-semibold">{title}</h2>
         <button
-          className="text-green-600 text-sm disabled:text-gray-400"
+          className="text-green-600 text-xs sm:text-sm disabled:text-gray-400"
           onClick={handleViewAll}
           disabled={loading}
           type="button"
@@ -49,14 +61,18 @@ export default function ProductSection({ title, products = [], onViewAll }) {
         </button>
       </div>
 
-      {errorMessage ? (
-        <p className="text-sm text-red-600 mb-4" role="alert">
-          {errorMessage}
-        </p>
+      {errorMessage && errorType === "connectivity" ? (
+        <div className="mb-6">
+          <DismissibleAlert type="error" title="Connection Error" message={errorMessage} onDismiss={() => setErrorMessage("")} />
+        </div>
+      ) : errorMessage ? (
+        <div className="mb-6">
+          <AlertMessage type="error" title="Error" message={errorMessage} />
+        </div>
       ) : null}
 
       {/* Product Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         {products.map((product) => (
           <ProductCard key={product.name} {...product} />
         ))}

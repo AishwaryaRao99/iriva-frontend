@@ -1,7 +1,9 @@
 // src/components/TopSection.jsx
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { searchProducts } from '../services/searchService';
+import AlertMessage from './AlertMessage';
+import DismissibleAlert from './DismissibleAlert';
 
 /**
  * Top Section Component
@@ -10,32 +12,52 @@ import { searchProducts } from '../services/searchService';
  * - subtitle
  * - onSearch (optional) - Called with search results from backend
  */
-export default function TopSection({ title, subtitle, onSearch }) {
+export default function TopSection({ title, subtitle, onSearch, clearSearchSignal }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchResultCount, setSearchResultCount] = useState(null);
+  const [searchError, setSearchError] = useState('');
+  const [searchErrorType, setSearchErrorType] = useState(''); // "connectivity" or "not_found"
+
+  useEffect(() => {
+    if (clearSearchSignal === undefined) return;
+
+    setSearchQuery('');
+    setSearchError('');
+    setSearchErrorType('');
+    setSearchResultCount(null);
+  }, [clearSearchSignal]);
 
   const handleSearchClick = useCallback(async () => {
     if (!searchQuery.trim()) {
-      alert('Please enter a search query');
+      setSearchError('Please enter a search query.');
+      setSearchErrorType('not_found');
       return;
     }
 
     setIsLoading(true);
+    setSearchError('');
+    setSearchErrorType('');
+    setSearchResultCount(null);
 
     try {
       const results = await searchProducts(searchQuery);
       setSearchResultCount(results?.length ?? 0);
 
       if (onSearch) {
-        onSearch(results);
+        onSearch(searchQuery, results);
       }
-
-      alert(`Found ${results?.length || 0} results for "${searchQuery}"`);
     } catch (error) {
-      const errorMessage = error.message || 'An unexpected error occurred during search';
-      alert(`Search failed: ${errorMessage}`);
-      console.error('Search error:', error);
+      const errorMessage = error.message || 'An unexpected error occurred during search.';
+      
+      // Check for connectivity/timeout errors
+      if (errorMessage.includes('timeout') || errorMessage.includes('Cannot connect') || errorMessage.includes('TypeError')) {
+        setSearchErrorType('connectivity');
+        setSearchError(errorMessage);
+      } else {
+        setSearchErrorType('not_found');
+        setSearchError(`Search failed: ${errorMessage}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -56,12 +78,12 @@ export default function TopSection({ title, subtitle, onSearch }) {
   }, []);
 
   return (
-    <section className="bg-blue-50 text-center py-16 px-4">
-      <h1 className="text-4xl font-bold mb-4">{title}</h1>
+    <section className="bg-blue-50 text-center py-12 sm:py-16 px-4 sm:px-6 md:px-8">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">{title}</h1>
 
-      <p className="text-gray-600 mb-6 max-w-xl mx-auto">{subtitle}</p>
+      <p className="text-sm sm:text-base text-gray-600 mb-6 max-w-xl mx-auto">{subtitle}</p>
 
-      <div className="flex justify-center">
+      <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-0">
         <input
           type="text"
           placeholder="Search for any product..."
@@ -69,7 +91,7 @@ export default function TopSection({ title, subtitle, onSearch }) {
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
-          className="border px-4 py-2 rounded-l-lg w-96 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="border px-4 py-2 rounded-l-lg sm:w-96 w-full disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <button
           type="button"
@@ -81,13 +103,23 @@ export default function TopSection({ title, subtitle, onSearch }) {
         </button>
       </div>
 
-      {searchResultCount !== null && (
-        <p className="text-sm text-gray-600 mt-4">
+      {searchError && searchErrorType === 'connectivity' ? (
+        <DismissibleAlert type="error" title="Connection Error" message={searchError} onDismiss={() => setSearchError('')} />
+      ) : searchError ? (
+        <div className="mt-4 max-w-xl mx-auto">
+          <AlertMessage
+            type="error"
+            title={searchErrorType === 'not_found' ? 'Product Not Found' : 'Search Error'}
+            message={searchError}
+          />
+        </div>
+      ) : searchResultCount !== null ? (
+        <p className="text-xs sm:text-sm text-gray-600 mt-4">
           {searchResultCount > 0
             ? `${searchResultCount} result${searchResultCount === 1 ? '' : 's'} found`
             : 'No results found.'}
         </p>
-      )}
+      ) : null}
     </section>
   );
 }
