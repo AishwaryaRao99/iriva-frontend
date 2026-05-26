@@ -12,9 +12,11 @@ import { getAllProducts } from "../services/searchService";
  * - title
  * - products (array)
  * - onViewAll (function) optional callback invoked after fetching all products
+ * - onProductInteraction (function) callback for product card interaction events
+ * - onViewDetails (function) callback invoked when a product card is clicked
  */
 
-export default function ProductSection({ title, products = [], onViewAll, onProductInteraction }) {
+export default function ProductSection({ title, products = [], onViewAll, onProductInteraction, onViewDetails }) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [errorType, setErrorType] = useState(""); // "connectivity" or "product_not_found"
@@ -74,7 +76,7 @@ export default function ProductSection({ title, products = [], onViewAll, onProd
       {/* Product Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         {products.map((product) => (
-          <ProductCard key={product.name} {...product} onInteraction={onProductInteraction} />
+          <ProductCard key={product.name} {...product} onInteraction={onProductInteraction} onViewDetails={onViewDetails} />
         ))}
       </div>
     </section>

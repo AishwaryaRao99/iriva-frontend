@@ -6,9 +6,10 @@ import Hero from "../components/TopSection";
 import CategorySection from "../components/CategorySection";
 import ProductSection from "../components/ProductSection";
 import ProductCard from "../components/ProductCard";
+import ProductDetails from "../components/ProductDetails";
 import SearchResults from "../components/SearchResults";
 import Footer from "../components/Footer";
-import { getProductsByCategory } from "../services/searchService";
+import { getProductsByCategory, getProductById } from "../services/searchService";
 
 // Sample Data (later from backend)
 const categories = [
@@ -66,10 +67,34 @@ export default function Home() {
   const [searchClearSignal, setSearchClearSignal] = useState(0);
   const [allProducts, setAllProducts] = useState([]);
   const [hasLoadedAllProducts, setHasLoadedAllProducts] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
 
   const clearSearchInput = () => {
     setSearchError("");
     setSearchClearSignal((prev) => prev + 1);
+  };
+
+  const handleProductSelect = async (product) => {
+    setDetailsError("");
+    setDetailsLoading(true);
+    setSelectedProduct(null);
+
+    try {
+      const details = await getProductById(product.id);
+      setSelectedProduct({ ...product, ...details });
+    } catch (error) {
+      setDetailsError(error?.message || "Unable to load product details.");
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleCloseProductDetails = () => {
+    setSelectedProduct(null);
+    setDetailsError("");
+    setDetailsLoading(false);
   };
 
   const handleCategorySelect = async (category) => {
@@ -109,6 +134,9 @@ export default function Home() {
     setSearchResults([]);
     setSearchError("");
     setSearchLoading(false);
+    setSelectedProduct(null);
+    setDetailsError("");
+    setDetailsLoading(false);
   };
 
   return (
@@ -117,16 +145,20 @@ export default function Home() {
         onHome={handleResetHome}
         categories={categories}
         onCategorySelect={handleCategorySelect}
+        isProductDetails={!!selectedProduct}
+        onSearch={!selectedProduct ? handleSearchResults : undefined}
       />
 
-      <Hero
-        title="Know what's inside your products"
-        subtitle="Discover transparency scores and ingredient breakdowns"
-        onSearch={handleSearchResults}
-        clearSearchSignal={searchClearSignal}
-      />
+      {!selectedProduct && (
+        <Hero
+          title="Know what's inside your products"
+          subtitle="Discover transparency scores and ingredient breakdowns"
+          onSearch={handleSearchResults}
+          clearSearchSignal={searchClearSignal}
+        />
+      )}
 
-      {searchTitle && (
+      {!selectedProduct && searchTitle && (
         <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 bg-white border-b border-gray-200">
           <button
             type="button"
@@ -139,7 +171,26 @@ export default function Home() {
         </div>
       )}
 
-      {!searchTitle ? (
+      {selectedProduct ? (
+        <ProductDetails
+          product={selectedProduct}
+          onClose={handleCloseProductDetails}
+          backLabel={searchTitle ? "Back to results" : "Back to Home"}
+        />
+      ) : detailsLoading ? (
+        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
+          <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-600 shadow-sm">
+            Loading product details...
+          </div>
+        </section>
+      ) : detailsError ? (
+        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
+          <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
+            <p className="text-lg font-semibold">Unable to load product details</p>
+            <p className="mt-3">{detailsError}</p>
+          </div>
+        </section>
+      ) : !searchTitle ? (
         <>
           <CategorySection
             categories={categories}
@@ -152,6 +203,7 @@ export default function Home() {
             products={products}
             onViewAll={handleAllProductsLoaded}
             onProductInteraction={clearSearchInput}
+            onViewDetails={handleProductSelect}
           />
 
           <ProductSection
@@ -159,6 +211,7 @@ export default function Home() {
             products={products}
             onViewAll={handleAllProductsLoaded}
             onProductInteraction={clearSearchInput}
+            onViewDetails={handleProductSelect}
           />
 
           {hasLoadedAllProducts ? (
@@ -170,7 +223,7 @@ export default function Home() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                 {allProducts.length > 0 ? (
                   allProducts.map((product) => (
-                    <ProductCard key={product.id ?? product.name} {...product} onInteraction={clearSearchInput} />
+                    <ProductCard key={product.id ?? product.name} {...product} onInteraction={clearSearchInput} onViewDetails={handleProductSelect} />
                   ))
                 ) : (
                   <p className="text-sm text-gray-600">No products were returned from the backend.</p>
@@ -186,6 +239,7 @@ export default function Home() {
           loading={searchLoading}
           error={searchError}
           onProductInteraction={clearSearchInput}
+          onViewDetails={handleProductSelect}
         />
       )}
 

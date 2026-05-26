@@ -31,7 +31,7 @@ const filterGroups = [
  * - loading
  * - error
  */
-export default function SearchResults({ title, results = [], loading = false, error = "", onProductInteraction }) {
+export default function SearchResults({ title, results = [], loading = false, error = "", onProductInteraction, onViewDetails }) {
   const [activeFilters, setActiveFilters] = useState(["all"]);
   const [dismissedError, setDismissedError] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -106,7 +106,7 @@ export default function SearchResults({ title, results = [], loading = false, er
             >
               Clear all
             </button>
-          </div>
+          </div>  
 
           {filterGroups.map((group) => (
             <div key={group.title} className="mb-6">
@@ -157,7 +157,7 @@ export default function SearchResults({ title, results = [], loading = false, er
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {results.map((product) => (
-                    <ProductCard key={product.id ?? product.name} {...product} onInteraction={onProductInteraction} />
+                    <ProductCard key={product.id ?? product.name} {...product} onInteraction={onProductInteraction} onViewDetails={onViewDetails} />
                   ))}
                 </div>
               )}
