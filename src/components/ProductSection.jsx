@@ -14,7 +14,7 @@ import { getAllProducts } from "../services/searchService";
  * - onViewAll (function) optional callback invoked after fetching all products
  */
 
-export default function ProductSection({ title, products = [], onViewAll }) {
+export default function ProductSection({ title, products = [], onViewAll, onProductInteraction }) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [errorType, setErrorType] = useState(""); // "connectivity" or "product_not_found"
@@ -74,7 +74,7 @@ export default function ProductSection({ title, products = [], onViewAll }) {
       {/* Product Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         {products.map((product) => (
-          <ProductCard key={product.name} {...product} />
+          <ProductCard key={product.name} {...product} onInteraction={onProductInteraction} />
         ))}
       </div>
     </section>

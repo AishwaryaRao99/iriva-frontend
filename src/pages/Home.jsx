@@ -63,10 +63,17 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [searchClearSignal, setSearchClearSignal] = useState(0);
   const [allProducts, setAllProducts] = useState([]);
   const [hasLoadedAllProducts, setHasLoadedAllProducts] = useState(false);
 
+  const clearSearchInput = () => {
+    setSearchError("");
+    setSearchClearSignal((prev) => prev + 1);
+  };
+
   const handleCategorySelect = async (category) => {
+    clearSearchInput();
     setSelectedCategory(category);
     setSearchTitle(`${category} Products`);
     setSearchLoading(true);
@@ -96,6 +103,7 @@ export default function Home() {
   };
 
   const handleResetHome = () => {
+    clearSearchInput();
     setSelectedCategory("");
     setSearchTitle("");
     setSearchResults([]);
@@ -115,6 +123,7 @@ export default function Home() {
         title="Know what's inside your products"
         subtitle="Discover transparency scores and ingredient breakdowns"
         onSearch={handleSearchResults}
+        clearSearchSignal={searchClearSignal}
       />
 
       {searchTitle && (
@@ -142,12 +151,14 @@ export default function Home() {
             title="Trending Products"
             products={products}
             onViewAll={handleAllProductsLoaded}
+            onProductInteraction={clearSearchInput}
           />
 
           <ProductSection
             title="Recently Reviewed"
             products={products}
             onViewAll={handleAllProductsLoaded}
+            onProductInteraction={clearSearchInput}
           />
 
           {hasLoadedAllProducts ? (
@@ -159,7 +170,7 @@ export default function Home() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                 {allProducts.length > 0 ? (
                   allProducts.map((product) => (
-                    <ProductCard key={product.id ?? product.name} {...product} />
+                    <ProductCard key={product.id ?? product.name} {...product} onInteraction={clearSearchInput} />
                   ))
                 ) : (
                   <p className="text-sm text-gray-600">No products were returned from the backend.</p>
@@ -174,6 +185,7 @@ export default function Home() {
           results={searchResults}
           loading={searchLoading}
           error={searchError}
+          onProductInteraction={clearSearchInput}
         />
       )}
 

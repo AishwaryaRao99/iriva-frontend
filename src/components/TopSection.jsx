@@ -31,7 +31,7 @@ export default function TopSection({ title, subtitle, onSearch, clearSearchSigna
   const handleSearchClick = useCallback(async () => {
     if (!searchQuery.trim()) {
       setSearchError('Please enter a search query.');
-      setSearchErrorType('not_found');
+      setSearchErrorType('search');
       return;
     }
 
@@ -54,9 +54,16 @@ export default function TopSection({ title, subtitle, onSearch, clearSearchSigna
       if (errorMessage.includes('timeout') || errorMessage.includes('Cannot connect') || errorMessage.includes('TypeError')) {
         setSearchErrorType('connectivity');
         setSearchError(errorMessage);
+      } else if (error?.errorCode === 'PRD_001' || errorMessage.includes('Product not found')) {
+        // For product not found errors, navigate to SearchResults with empty results
+        // so SearchResults can display the "Product Not Found" info message
+        if (onSearch) {
+          onSearch(searchQuery, []);
+        }
       } else {
-        setSearchErrorType('not_found');
-        setSearchError(`Search failed: ${errorMessage}`);
+        // For other errors, show error in TopSection
+        setSearchErrorType('error');
+        setSearchError(errorMessage);
       }
     } finally {
       setIsLoading(false);
@@ -105,13 +112,9 @@ export default function TopSection({ title, subtitle, onSearch, clearSearchSigna
 
       {searchError && searchErrorType === 'connectivity' ? (
         <DismissibleAlert type="error" title="Connection Error" message={searchError} onDismiss={() => setSearchError('')} />
-      ) : searchError ? (
+      ) : searchError && searchErrorType === 'error' ? (
         <div className="mt-4 max-w-xl mx-auto">
-          <AlertMessage
-            type="error"
-            title={searchErrorType === 'not_found' ? 'Product Not Found' : 'Search Error'}
-            message={searchError}
-          />
+          <AlertMessage type="error" title="Search Error" message={searchError} />
         </div>
       ) : searchResultCount !== null ? (
         <p className="text-xs sm:text-sm text-gray-600 mt-4">

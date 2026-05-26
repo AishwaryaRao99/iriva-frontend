@@ -31,9 +31,10 @@ const filterGroups = [
  * - loading
  * - error
  */
-export default function SearchResults({ title, results = [], loading = false, error = "" }) {
+export default function SearchResults({ title, results = [], loading = false, error = "", onProductInteraction }) {
   const [activeFilters, setActiveFilters] = useState(["all"]);
   const [dismissedError, setDismissedError] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Reset dismissedError when error changes (e.g., when navigating to a different category)
   useEffect(() => {
@@ -50,6 +51,8 @@ export default function SearchResults({ title, results = [], loading = false, er
     
     return 'not_found';
   }, [error]);
+
+  const isSearchPage = title.toLowerCase().startsWith('search results for');
 
   const toggleFilter = (id) => {
     setActiveFilters((current) =>
@@ -68,10 +71,29 @@ export default function SearchResults({ title, results = [], loading = false, er
               : `${results.length} product${results.length === 1 ? "" : "s"} found`}
           </p>
         </div>
+
+        {/* Filter icon: show when there are products (mobile/tablet toggles the filter panel). On desktop the filter panel remains visible. */}
+        {results.length > 0 && (
+          <div className="flex items-center xl:hidden">
+            <button
+              type="button"
+              aria-label="Toggle filters"
+              onClick={() => setShowFilters((s) => !s)}
+              className="ml-0 sm:ml-4 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:shadow"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 01.8 1.6L12 11.586V16a1 1 0 01-1.447.894L7 15.118V11.586L3.2 5.6A1 1 0 013 5z" clipRule="evenodd" />
+              </svg>
+              <span className="hidden sm:inline">Filters</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)] gap-8">
-        <aside className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,25%)_minmax(0,75%)] gap-8">
+        {/* Only render filters when there are products. On small screens the panel is toggled via `showFilters`. On xl and up the panel is always visible. */}
+        {results.length > 0 && (
+          <aside className={`${showFilters ? 'block' : 'hidden'} xl:block rounded-3xl border border-gray-200 bg-white p-6 shadow-sm`}>
           <div className="flex items-center justify-between mb-6">
             <div>
               <p className="text-sm text-gray-500 uppercase tracking-[0.2em]">Filters</p>
@@ -114,7 +136,8 @@ export default function SearchResults({ title, results = [], loading = false, er
               Use filters to narrow the product list by transparency and risk level.
             </p>
           </div>
-        </aside>
+          </aside>
+        )}
 
         <main>
           {error && !dismissedError && errorType === 'connectivity' ? (
@@ -128,13 +151,13 @@ export default function SearchResults({ title, results = [], loading = false, er
               {results.length === 0 ? (
                 <AlertMessage
                   type="info"
-                  title="No products found"
+                  title={isSearchPage ? "Product Not Found" : "No products found"}
                   message="Try another search term or category to see available products."
                 />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {results.map((product) => (
-                    <ProductCard key={product.id ?? product.name} {...product} />
+                    <ProductCard key={product.id ?? product.name} {...product} onInteraction={onProductInteraction} />
                   ))}
                 </div>
               )}

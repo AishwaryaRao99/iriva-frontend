@@ -15,7 +15,7 @@ import DismissibleAlert from "./DismissibleAlert";
  * - transparencyScore
  * - ethicalScore
  */
-export default function ProductCard({ id, productName, description, imageUrl, transparencyScore = 0, ethicalScore }) {
+export default function ProductCard({ id, productName, description, imageUrl, transparencyScore = 0, ethicalScore, onInteraction }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [errorType, setErrorType] = useState(""); // "product_not_found" or "connectivity"
@@ -27,6 +27,7 @@ export default function ProductCard({ id, productName, description, imageUrl, tr
   };
 
   const handleCardClick = async () => {
+    onInteraction?.();
     if (loading) return;
     setLoading(true);
     setError("");
