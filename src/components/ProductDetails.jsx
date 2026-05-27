@@ -110,6 +110,8 @@ export default function ProductDetails({ product, onClose, backLabel }) {
     { id: "reviews", label: "Community Reviews" },
   ];
 
+  const company = product?.company || product?.brand || product?.manufacturer || "";
+
   return (
     <section className="bg-white min-h-screen">
       {/* Back Button */}
@@ -126,39 +128,71 @@ export default function ProductDetails({ product, onClose, backLabel }) {
       </div>
 
       {/* Main Content */}
-      <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-8 sm:py-10 bg-gray-50">
-        <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
-          {/* Left Column - Product Info */}
-          <div>
-            {/* Product Image */}
-            <div className="rounded-2xl overflow-hidden bg-white shadow-sm mb-8">
+      {/* Use product-page-padding to leave 20% left/right on desktop, 5% on mobile/tablet */}
+      <div className="product-page-padding py-8 sm:py-10 bg-gray-50">
+        {/* Image + Details Container: keeps product image constrained in width so it doesn't stretch wide */}
+        <div className="grid gap-4 lg:grid-cols-[1fr_520px] mb-8 auto-rows-max lg:auto-rows-fr">
+          {/* Product Image: contained with square aspect ratio (height = width), 50% reduced size */}
+          <div className="lg:col-start-1 lg:self-stretch flex items-start">
+            <div className="rounded-2xl overflow-hidden bg-white shadow-sm w-1/2">
               <img
                 src={product?.imageUrl || "https://images.unsplash.com/photo-1618480066690-8457ab2b766e?w=800"}
                 alt={title}
-                className="w-full h-auto object-cover max-h-96"
+                className="w-full h-auto object-cover aspect-square"
                 loading="lazy"
               />
             </div>
+          </div>
+
+          {/* Product Details: sticky on desktop, flows below image on mobile */}
+          <aside className="lg:col-start-2 lg:sticky lg:top-24 lg:h-fit bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+            {/* Company/Brand Label */}
+            <p className="text-xs font-semibold uppercase tracking-widest text-green-600 mb-2">{company || 'Brand'}</p>
+            
+            {/* Product Title */}
+            <h2 className="text-3xl font-bold text-gray-900 mb-5">{title}</h2>
 
             {/* Transparency Score Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border-2 border-green-500 bg-green-50 px-4 py-2 mb-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+            <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-4 mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-green-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
               </svg>
-              <span className="text-sm font-semibold text-green-700">
-                {scorePercent}% <span className="font-normal">Transparency Score</span>
-              </span>
+              <div>
+                <div className="text-2xl font-bold text-green-700">{scorePercent}%</div>
+                <div className="text-xs font-medium text-green-600">Transparency Score</div>
+              </div>
             </div>
 
-            {/* Product Header */}
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-green-600 mb-2">{category || "Product Category"}</p>
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">{title}</h1>
-              </div>
+            {/* Product Description */}
+            <p className="text-sm text-gray-700 leading-relaxed mb-7">{description}</p>
+
+            {/* Ethical Summary Heading */}
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Ethical Summary</h3>
+            
+            {/* Ethical Summary Items */}
+            <div className="grid gap-3 mb-6">
+              {ethicalSummary.map((item) => (
+                <div key={item.title} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                  <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">{item.title}</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Save to Profile Button + Favorite */}
+            <div className="flex gap-3 items-stretch">
               <button
                 type="button"
-                className="flex-shrink-0 p-2 text-gray-400 hover:text-red-500 focus:outline-none transition"
+                className="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none transition"
+              >
+                Save to Profile
+              </button>
+              <button
+                type="button"
+                className="flex-shrink-0 p-3 text-gray-400 hover:text-red-500 focus:outline-none transition border border-gray-200 rounded-lg"
                 aria-label="Add to favorites"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
@@ -166,31 +200,12 @@ export default function ProductDetails({ product, onClose, backLabel }) {
                 </svg>
               </button>
             </div>
+          </aside>
+        </div>
 
-            {/* Product Description */}
-            <p className="text-gray-700 leading-relaxed mb-6 max-w-2xl">{description}</p>
-
-            {/* Ethical Summary */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Ethical Summary</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {ethicalSummary.map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition"
-                  >
-                    <span className="text-2xl flex-shrink-0">{item.icon}</span>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm">{item.title}</p>
-                      <p className="text-xs text-gray-600 mt-0.5">{item.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Ingredients/Tabs Section: full-width and separate from image+details container */}
+        <div>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               {/* Tab Navigation */}
               <div className="border-b border-gray-200 flex overflow-x-auto">
                 {tabs.map((tab) => (
@@ -261,41 +276,6 @@ export default function ProductDetails({ product, onClose, backLabel }) {
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Right Sidebar - Mobile: below, Desktop: sticky */}
-          <div className="lg:sticky lg:top-24 lg:h-fit">
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-green-600">Quick Info</p>
-                  <h3 className="text-xl font-semibold text-gray-900 mt-1">Product Info</h3>
-                </div>
-                <div className="flex-shrink-0 rounded-full bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-700">
-                  {scorePercent}%
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <p className="font-semibold text-gray-900 text-sm">Product Category</p>
-                  <p className="text-xs text-gray-600 mt-1">{category}</p>
-                </div>
-
-                {ethicalScore !== null && (
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <p className="font-semibold text-gray-900 text-sm">Ethical Score</p>
-                    <p className="text-xs text-gray-600 mt-1">{ethicalScore}/10</p>
-                  </div>
-                )}
-
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <p className="font-semibold text-gray-900 text-sm">Transparency</p>
-                  <p className="text-xs text-gray-600 mt-1">{scorePercent}% transparent</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>

@@ -47,49 +47,48 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
         🌿 TruthLabel
       </button>
 
-      <div className="flex gap-4 sm:gap-6 text-gray-700 items-center flex-1 justify-center lg:justify-start">
-        {!isProductDetails && (
-          <>
+      <div className="flex gap-4 sm:gap-6 text-gray-700 items-center flex-1 justify-center lg:justify-start ml-6">
+        {/* Always show Home and Categories so they're available on product pages too */}
+        <>
+          <button
+            type="button"
+            onClick={onHome}
+            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
+          >
+            Home
+          </button>
+
+          <div className="relative hidden sm:block">
             <button
               type="button"
-              onClick={onHome}
-              className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
+              onClick={() => setIsDropdownOpen((open) => !open)}
+              className="text-sm font-medium hover:text-green-600 focus:outline-none transition"
+              aria-expanded={isDropdownOpen}
             >
-              Home
+              Categories
             </button>
 
-            <div className="relative hidden sm:block">
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen((open) => !open)}
-                className="text-sm font-medium hover:text-green-600 focus:outline-none transition"
-                aria-expanded={isDropdownOpen}
-              >
-                Categories
-              </button>
-
-              {isDropdownOpen && (
-                <div className="absolute left-0 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg z-50">
-                  <div className="flex flex-col">
-                    {categories.map((category) => (
-                      <button
-                        key={category.name}
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          onCategorySelect?.(category.name);
-                        }}
-                        className="text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none transition"
-                      >
-                        {category.name}
-                      </button>
-                    ))}
-                  </div>
+            {isDropdownOpen && (
+              <div className="absolute left-0 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg z-50">
+                <div className="flex flex-col">
+                  {categories.map((category) => (
+                    <button
+                      key={category.name}
+                      type="button"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        onCategorySelect?.(category.name);
+                      }}
+                      className="text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none transition"
+                    >
+                      {category.name}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
-          </>
-        )}
+              </div>
+            )}
+          </div>
+        </>
       </div>
 
       {/* Search bar */}
@@ -102,7 +101,7 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={searchLoading}
-            className="hidden md:block px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
             aria-label="Search products"
           />
           <button
