@@ -1,13 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* Responsive page padding for product details page
-	 - Mobile / Tablet: 5% left/right padding
+/* Responsive page padding for home/search results pages
+	 - Mobile / Tablet: no extra side padding
 	 - Desktop (>=1024px): 20% left/right padding
-	 This keeps markup simple and responsive without JS. */
+	 This keeps desktop content centered without affecting smaller screens. */
 .product-page-padding {
-	padding-left: 5%;
-	padding-right: 5%;
+	padding-left: 0;
+	padding-right: 0;
 }
 
 @media (min-width: 1024px) {

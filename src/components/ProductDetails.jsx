@@ -73,6 +73,25 @@ const defaultIngredients = [
   },
 ];
 
+const transparencyHighlights = [
+  "Complete ingredient list with INCI names provided",
+  "Third-party certifications verified (Leaping Bunny, EWG)",
+  "Manufacturing location and process disclosed",
+  "Sustainability practices clearly documented",
+];
+
+const transparencyRisks = [
+  "Contains \"Parfum (Fragrance)\" - a vague ingredient that may hide allergens",
+  "Parabens present - considered controversial by some health organizations",
+];
+
+const transparencyBreakdown = [
+  { label: "Ingredient Transparency", value: 92 },
+  { label: "Ethical Certifications", value: 100 },
+  { label: "Manufacturing Info", value: 95 },
+  { label: "Sourcing Transparency", value: 93 },
+];
+
 const formatScore = (score) => {
   const value = typeof score === "number" ? score : Number(score);
   if (Number.isNaN(value)) return "0";
@@ -104,6 +123,13 @@ export default function ProductDetails({ product, onClose, backLabel }) {
     ? product.ingredients
     : defaultIngredients;
 
+  const statusBadgeStyles = {
+    Safe: "bg-green-100 text-green-900 border border-green-200",
+    Caution: "bg-yellow-100 text-yellow-900 border border-yellow-200",
+    Warning: "bg-orange-100 text-orange-900 border border-orange-200",
+    Harmful: "bg-red-100 text-red-900 border border-red-200",
+  };
+
   const tabs = [
     { id: "ingredients", label: "Ingredients" },
     { id: "transparency", label: "Transparency Analysis" },
@@ -131,10 +157,10 @@ export default function ProductDetails({ product, onClose, backLabel }) {
       {/* Use product-page-padding to leave 20% left/right on desktop, 5% on mobile/tablet */}
       <div className="product-page-padding py-8 sm:py-10 bg-gray-50">
         {/* Image + Details Container: keeps product image constrained in width so it doesn't stretch wide */}
-        <div className="grid gap-4 lg:grid-cols-[1fr_520px] mb-8 auto-rows-max lg:auto-rows-fr">
-          {/* Product Image: contained with square aspect ratio (height = width), 50% reduced size */}
+        <div className="grid gap-4 lg:grid-cols-[1fr_640px] mb-8 auto-rows-max lg:auto-rows-fr">
+          {/* Product Image: contained with square aspect ratio and larger desktop width */}
           <div className="lg:col-start-1 lg:self-stretch flex items-start">
-            <div className="rounded-2xl overflow-hidden bg-white shadow-sm w-1/2">
+            <div className="rounded-2xl overflow-hidden bg-white shadow-sm w-[72%]">
               <img
                 src={product?.imageUrl || "https://images.unsplash.com/photo-1618480066690-8457ab2b766e?w=800"}
                 alt={title}
@@ -147,10 +173,10 @@ export default function ProductDetails({ product, onClose, backLabel }) {
           {/* Product Details: sticky on desktop, flows below image on mobile */}
           <aside className="lg:col-start-2 lg:sticky lg:top-24 lg:h-fit bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
             {/* Company/Brand Label */}
-            <p className="text-xs font-semibold uppercase tracking-widest text-green-600 mb-2">{company || 'Brand'}</p>
+            <p className="text-sm font-semibold uppercase tracking-widest text-green-600 mb-2">{company || 'Brand'}</p>
             
             {/* Product Title */}
-            <h2 className="text-3xl font-bold text-gray-900 mb-5">{title}</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-5">{title}</h2>
 
             {/* Transparency Score Badge */}
             <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-4 mb-6">
@@ -158,16 +184,16 @@ export default function ProductDetails({ product, onClose, backLabel }) {
                 <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
               </svg>
               <div>
-                <div className="text-2xl font-bold text-green-700">{scorePercent}%</div>
-                <div className="text-xs font-medium text-green-600">Transparency Score</div>
+                <div className="text-3xl font-bold text-green-700">{scorePercent}%</div>
+                <div className="text-sm font-medium text-green-600">Transparency Score</div>
               </div>
             </div>
 
             {/* Product Description */}
-            <p className="text-sm text-gray-700 leading-relaxed mb-7">{description}</p>
+            <p className="text-base text-gray-700 leading-relaxed mb-7">{description}</p>
 
             {/* Ethical Summary Heading */}
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Ethical Summary</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Ethical Summary</h3>
             
             {/* Ethical Summary Items */}
             <div className="grid gap-3 mb-6">
@@ -175,8 +201,8 @@ export default function ProductDetails({ product, onClose, backLabel }) {
                 <div key={item.title} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
                   <span className="text-2xl flex-shrink-0">{item.icon}</span>
                   <div>
-                    <p className="font-semibold text-gray-900 text-sm">{item.title}</p>
-                    <p className="text-xs text-gray-600 mt-0.5">{item.description}</p>
+                    <p className="font-semibold text-gray-900 text-base">{item.title}</p>
+                    <p className="text-sm text-gray-600 mt-1">{item.description}</p>
                   </div>
                 </div>
               ))}
@@ -213,7 +239,7 @@ export default function ProductDetails({ product, onClose, backLabel }) {
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 sm:px-6 py-4 text-sm font-medium whitespace-nowrap transition focus:outline-none ${
+                    className={`px-4 sm:px-6 py-4 text-base font-medium whitespace-nowrap transition focus:outline-none ${
                       activeTab === tab.id
                         ? "text-green-600 border-b-2 border-green-600"
                         : "text-gray-600 hover:text-gray-900"
@@ -228,28 +254,28 @@ export default function ProductDetails({ product, onClose, backLabel }) {
               <div className="p-6 sm:p-8">
                 {activeTab === "ingredients" && (
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Ingredient Breakdown</h3>
-                    <p className="text-sm text-gray-600 mb-6">
+                    <h3 className="text-2xl font-semibold text-gray-900 mb-2">Ingredient Breakdown</h3>
+                    <p className="text-base text-gray-600 mb-6">
                       Review each ingredient to understand the product makeup and any risk details.
                     </p>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                       {ingredientList.map((ingredient) => (
                         <div
                           key={ingredient.name}
-                          className={`rounded-xl border-2 p-4 transition ${
+                          className={`w-full lg:w-[60%] rounded-xl border-2 p-4 transition ${
                             statusStyles[ingredient.status] || statusStyles.Safe
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="font-semibold text-gray-900">{ingredient.name}</p>
-                              <span className="inline-block mt-2 px-2.5 py-1 text-xs font-semibold uppercase rounded-full bg-white/60">
-                                {ingredient.status}
-                              </span>
-                            </div>
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="font-semibold text-gray-900 text-base">{ingredient.name}</p>
+                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold uppercase ${
+                              statusBadgeStyles[ingredient.status] || statusBadgeStyles.Safe
+                            }`}>
+                              {ingredient.status}
+                            </span>
                           </div>
                           {ingredient.description && (
-                            <p className="mt-3 text-sm text-gray-700">{ingredient.description}</p>
+                            <p className="mt-3 text-base text-gray-700">{ingredient.description}</p>
                           )}
                         </div>
                       ))}
@@ -258,18 +284,61 @@ export default function ProductDetails({ product, onClose, backLabel }) {
                 )}
 
                 {activeTab === "transparency" && (
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Transparency Analysis</h3>
-                    <p className="text-gray-600 text-sm">
-                      Detailed transparency analysis coming soon. This section will include manufacturer information, certifications, and supply chain details.
-                    </p>
+                  <div className="space-y-6 w-full lg:w-[60%]">
+                    <div>
+                      <h3 className="text-3xl font-semibold text-gray-900 mb-4">Transparency Analysis</h3>
+                      <div className="rounded-3xl border border-green-200 bg-green-50 p-6 shadow-sm">
+                        <p className="text-xl font-semibold text-green-900 mb-4">What makes this score high?</p>
+                        <ul className="space-y-3 text-base text-green-900">
+                          {transparencyHighlights.map((item) => (
+                            <li key={item} className="flex gap-3 items-start">
+                              <span className="mt-0.5 text-lg">✓</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="rounded-3xl border border-yellow-200 bg-yellow-50 p-6 shadow-sm">
+                        <p className="text-xl font-semibold text-yellow-900 mb-4">Areas for improvement</p>
+                        <ul className="space-y-3 text-base text-yellow-900">
+                          {transparencyRisks.map((item) => (
+                            <li key={item} className="flex gap-3 items-start">
+                              <span className="mt-0.5 text-lg">⚠️</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <p className="text-xl font-semibold text-slate-900 mb-4">Score breakdown</p>
+                        <div className="space-y-4">
+                          {transparencyBreakdown.map((item) => (
+                            <div key={item.label}>
+                              <div className="flex items-center justify-between text-base text-slate-700 mb-2">
+                                <span>{item.label}</span>
+                                <span>{item.value}%</span>
+                              </div>
+                              <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                                <div className="h-full rounded-full bg-green-600" style={{ width: `${item.value}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
                 {activeTab === "reviews" && (
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Community Reviews</h3>
-                    <p className="text-gray-600 text-sm">
+                    <h3 className="text-2xl font-semibold text-gray-900 mb-4">Community Reviews</h3>
+                    <p className="text-gray-600 text-base">
                       Community reviews coming soon. Share your experience and read what others think about this product.
                     </p>
                   </div>
