@@ -1,6 +1,6 @@
 // src/pages/Home.jsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/NavBar";
 import Hero from "../components/TopSection";
 import CategorySection from "../components/CategorySection";
@@ -9,54 +9,13 @@ import ProductCard from "../components/ProductCard";
 import ProductDetails from "../components/ProductDetails";
 import SearchResults from "../components/SearchResults";
 import Footer from "../components/Footer";
-import { getProductsByCategory, getProductById, searchProducts } from "../services/searchService";
-
-// Sample Data (later from backend)
-const categories = [
-  { name: "Food", icon: "🍎" },
-  { name: "Skincare", icon: "✨" },
-  { name: "Cleaning", icon: "🧼" },
-  { name: "Fashion", icon: "👗" },
-];
-
-const products = [
-  {
-    id: 1,
-    productName: "Organic Face Serum",
-    description: "Naturally derived formula for healthy skin",
-    imageUrl: "https://images.unsplash.com/photo-1618480066690-8457ab2b766e?w=400",
-    ethicalScore: 8.9,
-    transparencyScore: 9.5,
-    category: "SKINCARE",
-  },
-  {
-    id: 2,
-    productName: "Natural Moisturizer",
-    description: "Lightweight hydration for daily use",
-    imageUrl: "https://images.unsplash.com/photo-1616986953793-2e6159b78580?w=400",
-    ethicalScore: 8.2,
-    transparencyScore: 8.8,
-    category: "SKINCARE",
-  },
-  {
-    id: 3,
-    productName: "Vitamin C Cream",
-    description: "Brightening cream with antioxidant support",
-    imageUrl: "https://images.unsplash.com/photo-1616986953793-2e6159b78580?w=400",
-    ethicalScore: 8.7,
-    transparencyScore: 9.2,
-    category: "SKINCARE",
-  },
-  {
-    id: 4,
-    productName: "Hydrating Toner",
-    description: "Refreshing toner for softer skin",
-    imageUrl: "https://images.unsplash.com/photo-1643379850623-7eb6442cd262?w=400",
-    ethicalScore: 7.4,
-    transparencyScore: 7.8,
-    category: "SKINCARE",
-  },
-];
+import {
+  getProductsByCategory,
+  getProductById,
+  searchProducts,
+  getAllProducts,
+  getCategories,
+} from "../services/searchService";
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -65,16 +24,65 @@ export default function Home() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [searchClearSignal, setSearchClearSignal] = useState(0);
+  const [categories, setCategories] = useState([]);
+  const [trendingProducts, setTrendingProducts] = useState([]);
+  const [recentProducts, setRecentProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [hasLoadedAllProducts, setHasLoadedAllProducts] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
+  const [homeError, setHomeError] = useState("");
+  const [homeLoading, setHomeLoading] = useState(true);
 
   const clearSearchInput = () => {
     setSearchError("");
     setSearchClearSignal((prev) => prev + 1);
   };
+
+  useEffect(() => {
+    const loadHomeData = async () => {
+      setHomeError("");
+      setHomeLoading(true);
+
+      try {
+        const [categoryData, productData] = await Promise.all([
+          getCategories(),
+          getAllProducts(),
+        ]);
+
+        const rawCategories = Array.isArray(categoryData)
+          ? categoryData
+          : Array.isArray(categoryData?.categories)
+          ? categoryData.categories
+          : [];
+
+        const formattedCategories = rawCategories
+          .map((item) => ({
+            name:
+              item?.category_value ||
+              item?.category ||
+              item?.name ||
+              item?.value ||
+              "",
+            icon: item?.icon || item?.symbol || item?.emoji || "",
+          }))
+          .filter((item) => item.name);
+
+        setCategories(formattedCategories);
+
+        const loadedProducts = Array.isArray(productData) ? productData : [];
+        setTrendingProducts(loadedProducts);
+        setRecentProducts(loadedProducts);
+      } catch (error) {
+        setHomeError(error?.message || "Unable to load categories and products.");
+      } finally {
+        setHomeLoading(false);
+      }
+    };
+
+    loadHomeData();
+  }, []);
 
   const handleProductSelect = async (product) => {
     setDetailsError("");
@@ -161,7 +169,7 @@ export default function Home() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <Navbar
         onHome={handleResetHome}
         categories={categories}
@@ -169,7 +177,7 @@ export default function Home() {
         isProductDetails={!!selectedProduct}
         onSearch={handleSearchResults}
       />
-
+      <main className="flex-grow">
       {!selectedProduct ? (
         <div className="product-page-padding">
           {!searchTitle && (
@@ -194,7 +202,22 @@ export default function Home() {
         </div>
       )}
 
-      {detailsLoading ? (
+      {homeError && !searchTitle && (
+        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
+          <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
+            <p className="text-lg font-semibold">Unable to load home content</p>
+            <p className="mt-3">{homeError}</p>
+          </div>
+        </section>
+      )}
+
+      {homeLoading ? (
+        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
+          <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-600 shadow-sm">
+            Loading categories and products...
+          </div>
+        </section>
+      ) : detailsLoading ? (
         <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
           <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-600 shadow-sm">
             Loading product details...
@@ -217,7 +240,7 @@ export default function Home() {
 
           <ProductSection
             title="Trending Products"
-            products={products}
+            products={trendingProducts}
             onViewAll={handleAllProductsLoaded}
             onProductInteraction={clearSearchInput}
             onViewDetails={handleProductSelect}
@@ -225,7 +248,7 @@ export default function Home() {
 
           <ProductSection
             title="Recently Reviewed"
-            products={products}
+            products={recentProducts}
             onViewAll={handleAllProductsLoaded}
             onProductInteraction={clearSearchInput}
             onViewDetails={handleProductSelect}
@@ -267,6 +290,7 @@ export default function Home() {
           backLabel={searchTitle ? "Back to results" : "Back to Home"}
         />
       )}
+      </main>
 
       <Footer />
     </div>

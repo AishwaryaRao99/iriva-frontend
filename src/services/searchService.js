@@ -6,6 +6,7 @@ const API_BASE_URL = "http://localhost:8080/transparency-portal/api/v1/productsa
 const SEARCH_ENDPOINT = `${API_BASE_URL}/search`;
 const ALL_PRODUCTS_ENDPOINT = `${API_BASE_URL}/get-all-products`;
 const CATEGORY_PRODUCTS_ENDPOINT = `${API_BASE_URL}/by-category`;
+const CATEGORIES_ENDPOINT = `${API_BASE_URL}/categories`;
 const TIMEOUT_DURATION_MS = 10000;
 
 /**
@@ -88,6 +89,22 @@ export const getProductsByCategory = async (category) => {
   );
 };
 
+export const getCategories = async () => {
+  const response = await fetchJson(CATEGORIES_ENDPOINT, {
+    method: "GET",
+  });
+
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (Array.isArray(response?.categories)) {
+    return response.categories;
+  }
+
+  return [];
+};
+
 export const getProductById = async (productId) => {
   if (!productId || `${productId}`.trim() === "") {
     throw new Error("Product id is required to fetch the product details.");
@@ -102,5 +119,6 @@ export default {
   searchProducts,
   getAllProducts,
   getProductsByCategory,
+  getCategories,
   getProductById,
 };

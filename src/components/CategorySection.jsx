@@ -17,15 +17,20 @@ export default function CategorySection({ categories = [], selectedCategory, onC
       </h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-        {categories.map((cat) => (
-          <CategoryCard
-            key={cat.name}
-            name={cat.name}
-            icon={cat.icon}
-            selected={selectedCategory === cat.name}
-            onSelect={onCategorySelect}
-          />
-        ))}
+        {categories.map((cat) => {
+          const displayName = cat?.name || cat?.category_value || cat?.category || cat?.value;
+          const displayIcon = cat?.icon || cat?.symbol || cat?.emoji || "📦";
+
+          return (
+            <CategoryCard
+              key={displayName}
+              name={displayName}
+              icon={displayIcon}
+              selected={selectedCategory === displayName}
+              onSelect={onCategorySelect}
+            />
+          );
+        })}
       </div>
     </section>
   );
