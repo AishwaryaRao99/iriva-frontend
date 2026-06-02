@@ -160,18 +160,18 @@ export default function ProductDetails({ product, onClose, backLabel }) {
         <div className="grid gap-4 lg:grid-cols-[1fr_640px] mb-8 auto-rows-max lg:auto-rows-fr">
           {/* Product Image: contained with square aspect ratio and larger desktop width */}
           <div className="lg:col-start-1 lg:self-stretch flex items-start">
-            <div className="rounded-2xl overflow-hidden bg-white shadow-sm w-[72%]">
+            <div className="h-[stretch] rounded-2xl overflow-hidden bg-white shadow-sm w-full">
               <img
                 src={product?.imageUrl || "https://images.unsplash.com/photo-1618480066690-8457ab2b766e?w=800"}
                 alt={title}
-                className="w-full h-auto object-cover aspect-square"
+                className="w-full h-[stretch] object-cover aspect-square"
                 loading="lazy"
               />
             </div>
           </div>
 
           {/* Product Details: sticky on desktop, flows below image on mobile */}
-          <aside className="lg:col-start-2 lg:sticky lg:top-24 lg:h-fit bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+          <aside className="lg:col-start-2 lg:sticky lg:top-24 bg-white rounded-2xl border border-gray-200 p-8 pt-12 shadow-sm">
             {/* Company/Brand Label */}
             <p className="text-sm font-semibold uppercase tracking-widest text-green-600 mb-2">{company || 'Brand'}</p>
             
