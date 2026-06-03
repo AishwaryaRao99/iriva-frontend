@@ -58,36 +58,38 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
             Home
           </button>
 
-          <div className="relative hidden sm:block">
-            <button
-              type="button"
-              onClick={() => setIsDropdownOpen((open) => !open)}
-              className="text-sm font-medium hover:text-green-600 focus:outline-none transition"
-              aria-expanded={isDropdownOpen}
-            >
-              Categories
-            </button>
+          {categories.length > 0 && (
+            <div className="relative hidden sm:block">
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen((open) => !open)}
+                className="text-sm font-medium hover:text-green-600 focus:outline-none transition"
+                aria-expanded={isDropdownOpen}
+              >
+                Categories
+              </button>
 
-            {isDropdownOpen && (
-              <div className="absolute left-0 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg z-50">
-                <div className="flex flex-col">
-                  {categories.map((category) => (
-                    <button
-                      key={category.name}
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        onCategorySelect?.(category.name);
-                      }}
-                      className="text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none transition"
-                    >
-                      {category.name}
-                    </button>
-                  ))}
+              {isDropdownOpen && (
+                <div className="absolute left-0 mt-2 w-48 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg z-50">
+                  <div className="flex flex-col">
+                    {categories.map((category) => (
+                      <button
+                        key={category.name}
+                        type="button"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          onCategorySelect?.(category.name);
+                        }}
+                        className="text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none transition"
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </>
       </div>
 

@@ -7,90 +7,14 @@ const statusStyles = {
   Harmful: "border-red-200 bg-red-50 text-red-900",
 };
 
-const defaultEthicalSummary = [
-  {
-    title: "No Animal Testing",
-    description: "Certified cruelty-free by Leaping Bunny",
-    icon: "❤️",
-  },
-  {
-    title: "95% Vegan",
-    description: "Contains trace amounts of beeswax",
-    icon: "✓",
-  },
-  {
-    title: "Low Risk Level",
-    description: "Contains 1 ingredient flagged for caution",
-    icon: "🛡️",
-  },
-  {
-    title: "Contains Fragrance",
-    description: "May cause irritation in sensitive individuals",
-    icon: "⚠️",
-  },
-];
+const iconMap = {
+  "heart-icon": "❤️",
+  "tick-icon": "✓",
+  "secure-icon": "🛡️",
+  "warning-icon": "⚠️",
+};
 
-const defaultIngredients = [
-  {
-    name: "Aqua (Water)",
-    status: "Safe",
-    description: "Base ingredient",
-  },
-  {
-    name: "Glycerin",
-    status: "Safe",
-    description: "Moisturizing agent",
-  },
-  {
-    name: "Niacinamide",
-    status: "Safe",
-    description: "Vitamin B3, brightening",
-  },
-  {
-    name: "Hyaluronic Acid",
-    status: "Safe",
-    description: "Hydration booster",
-  },
-  {
-    name: "Parfum (Fragrance)",
-    status: "Warning",
-    description: "May cause allergic reactions",
-  },
-  {
-    name: "Retinol",
-    status: "Caution",
-    description: "Powerful but can irritate sensitive skin",
-  },
-  {
-    name: "Parabens",
-    status: "Harmful",
-    description: "Preservative with hormone-disrupting concerns",
-  },
-  {
-    name: "Phenoxyethanol",
-    status: "Caution",
-    description: "Preservative, generally safe in low amounts",
-  },
-];
-
-const transparencyHighlights = [
-  "Complete ingredient list with INCI names provided",
-  "Third-party certifications verified (Leaping Bunny, EWG)",
-  "Manufacturing location and process disclosed",
-  "Sustainability practices clearly documented",
-];
-
-const transparencyRisks = [
-  "Contains \"Parfum (Fragrance)\" - a vague ingredient that may hide allergens",
-  "Parabens present - considered controversial by some health organizations",
-];
-
-const transparencyBreakdown = [
-  { label: "Ingredient Transparency", value: 92 },
-  { label: "Ethical Certifications", value: 100 },
-  { label: "Manufacturing Info", value: 95 },
-  { label: "Sourcing Transparency", value: 93 },
-];
+const getIcon = (icon) => iconMap[icon] || icon || "ℹ️";
 
 const formatScore = (score) => {
   const value = typeof score === "number" ? score : Number(score);
@@ -115,13 +39,50 @@ export default function ProductDetails({ product, onClose, backLabel }) {
   const category = product?.category || product?.categoryName || "Skincare";
   const ethicalScore = typeof product?.ethicalScore === "number" ? product.ethicalScore : product?.ethicalScore ?? null;
 
+  // Use dynamic product values from backend data, with graceful empty-state handling.
   const ethicalSummary = Array.isArray(product?.ethicalSummary)
-    ? product.ethicalSummary
-    : defaultEthicalSummary;
+    ? product.ethicalSummary.map((item) => ({
+        title: item?.title || "Untitled summary",
+        description: item?.description || "No description available.",
+        icon: getIcon(item?.icon),
+      }))
+    : [];
 
   const ingredientList = Array.isArray(product?.ingredients)
     ? product.ingredients
-    : defaultIngredients;
+    : [];
+
+  const transparencyAnalysis = product?.transparencyAnalysis || {};
+  const transparencyHighlights = Array.isArray(transparencyAnalysis.scoreHighReasons)
+    ? transparencyAnalysis.scoreHighReasons
+    : [];
+  const transparencyRisks = Array.isArray(transparencyAnalysis.improvementAreas)
+    ? transparencyAnalysis.improvementAreas
+    : [];
+  const scoreBreakdown = transparencyAnalysis.scoreBreakdown || {};
+  const transparencyBreakdown = [
+    {
+      label: "Ingredient Transparency",
+      value: Number(scoreBreakdown.ingredientTransparency) || 0,
+    },
+    {
+      label: "Ethical Certifications",
+      value: Number(scoreBreakdown.ethicalCertifications) || 0,
+    },
+    {
+      label: "Manufacturing Info",
+      value: Number(scoreBreakdown.manufacturingInfo) || 0,
+    },
+    {
+      label: "Sourcing Transparency",
+      value: Number(scoreBreakdown.sourcingTransparency) || 0,
+    },
+  ];
+
+  const hasTransparencyData =
+    transparencyHighlights.length > 0 ||
+    transparencyRisks.length > 0 ||
+    transparencyBreakdown.some((item) => item.value > 0);
 
   const statusBadgeStyles = {
     Safe: "bg-green-100 text-green-900 border border-green-200",
@@ -196,17 +157,21 @@ export default function ProductDetails({ product, onClose, backLabel }) {
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Ethical Summary</h3>
             
             {/* Ethical Summary Items */}
-            <div className="grid gap-3 mb-6">
-              {ethicalSummary.map((item) => (
-                <div key={item.title} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
-                  <span className="text-2xl flex-shrink-0">{item.icon}</span>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-base">{item.title}</p>
-                    <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+            {ethicalSummary.length > 0 ? (
+              <div className="grid gap-3 mb-6">
+                {ethicalSummary.map((item) => (
+                  <div key={item.title} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                    <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-base">{item.title}</p>
+                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600 mb-6">No ethical summary data is available for this product.</p>
+            )}
 
             {/* Save to Profile Button + Favorite */}
             <div className="flex gap-3 items-stretch">
@@ -259,79 +224,95 @@ export default function ProductDetails({ product, onClose, backLabel }) {
                       Review each ingredient to understand the product makeup and any risk details.
                     </p>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {ingredientList.map((ingredient) => (
-                        <div
-                          key={ingredient.name}
-                          className={`w-full lg:w-[60%] rounded-xl border-2 p-4 transition ${
-                            statusStyles[ingredient.status] || statusStyles.Safe
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <p className="font-semibold text-gray-900 text-base">{ingredient.name}</p>
-                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold uppercase ${
-                              statusBadgeStyles[ingredient.status] || statusBadgeStyles.Safe
-                            }`}>
-                              {ingredient.status}
-                            </span>
-                          </div>
-                          {ingredient.description && (
-                            <p className="mt-3 text-base text-gray-700">{ingredient.description}</p>
-                          )}
-                        </div>
-                      ))}
+                      {ingredientList.length > 0 ? (
+                        ingredientList.map((ingredient) => {
+                          const safetyStatus = ingredient.safetyStatus || ingredient.status || "Safe";
+                          return (
+                            <div
+                              key={`${ingredient.name}-${safetyStatus}`}
+                              className={`w-full lg:w-[60%] rounded-xl border-2 p-4 transition ${
+                                statusStyles[safetyStatus] || statusStyles.Safe
+                              }`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <p className="font-semibold text-gray-900 text-base">{ingredient.name}</p>
+                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold uppercase ${
+                                  statusBadgeStyles[safetyStatus] || statusBadgeStyles.Safe
+                                }`}>
+                                  {safetyStatus}
+                                </span>
+                              </div>
+                              {ingredient.description && (
+                                <p className="mt-3 text-base text-gray-700">{ingredient.description}</p>
+                              )}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p className="text-sm text-gray-600">No ingredient details are available for this product.</p>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {activeTab === "transparency" && (
                   <div className="space-y-6 w-full lg:w-[60%]">
-                    <div>
-                      <h3 className="text-3xl font-semibold text-gray-900 mb-4">Transparency Analysis</h3>
-                      <div className="rounded-3xl border border-green-200 bg-green-50 p-6 shadow-sm">
-                        <p className="text-xl font-semibold text-green-900 mb-4">What makes this score high?</p>
-                        <ul className="space-y-3 text-base text-green-900">
-                          {transparencyHighlights.map((item) => (
-                            <li key={item} className="flex gap-3 items-start">
-                              <span className="mt-0.5 text-lg">✓</span>
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
+                    <h3 className="text-3xl font-semibold text-gray-900 mb-4">Transparency Analysis</h3>
 
-                    <div>
-                      <div className="rounded-3xl border border-yellow-200 bg-yellow-50 p-6 shadow-sm">
-                        <p className="text-xl font-semibold text-yellow-900 mb-4">Areas for improvement</p>
-                        <ul className="space-y-3 text-base text-yellow-900">
-                          {transparencyRisks.map((item) => (
-                            <li key={item} className="flex gap-3 items-start">
-                              <span className="mt-0.5 text-lg">⚠️</span>
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
+                    {hasTransparencyData ? (
+                      <>
+                        {transparencyHighlights.length > 0 && (
+                          <div className="rounded-3xl border border-green-200 bg-green-50 p-6 shadow-sm">
+                            <p className="text-xl font-semibold text-green-900 mb-4">What makes this score high?</p>
+                            <ul className="space-y-3 text-base text-green-900">
+                              {transparencyHighlights.map((item) => (
+                                <li key={item} className="flex gap-3 items-start">
+                                  <span>✓</span>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
 
-                    <div>
-                      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <p className="text-xl font-semibold text-slate-900 mb-4">Score breakdown</p>
-                        <div className="space-y-4">
-                          {transparencyBreakdown.map((item) => (
-                            <div key={item.label}>
-                              <div className="flex items-center justify-between text-base text-slate-700 mb-2">
-                                <span>{item.label}</span>
-                                <span>{item.value}%</span>
-                              </div>
-                              <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
-                                <div className="h-full rounded-full bg-green-600" style={{ width: `${item.value}%` }} />
-                              </div>
+                        {transparencyRisks.length > 0 && (
+                          <div className="rounded-3xl border border-yellow-200 bg-yellow-50 p-6 shadow-sm">
+                            <p className="text-xl font-semibold text-yellow-900 mb-4">Areas for improvement</p>
+                            <ul className="space-y-3 text-base text-yellow-900">
+                              {transparencyRisks.map((item) => (
+                                <li key={item} className="flex gap-3 items-start">
+                                  <span>⚠️</span>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {transparencyBreakdown.some((item) => item.value > 0) && (
+                          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <p className="text-xl font-semibold text-slate-900 mb-4">Score breakdown</p>
+                            <div className="space-y-4">
+                              {transparencyBreakdown.map((item) => (
+                                <div key={item.label}>
+                                  <div className="flex items-center justify-between text-base text-slate-700 mb-2">
+                                    <span>{item.label}</span>
+                                    <span>{item.value}%</span>
+                                  </div>
+                                  <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                                    <div className="h-full rounded-full bg-green-600" style={{ width: `${item.value}%` }} />
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <p className="text-base text-gray-600">No transparency analysis data is available for this product.</p>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 

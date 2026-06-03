@@ -40,6 +40,27 @@ export default function Home() {
     setSearchClearSignal((prev) => prev + 1);
   };
 
+  const isBackendUnavailable = (message) =>
+    typeof message === "string" &&
+    /(Cannot connect to backend|Request timed out|Failed to fetch|NetworkError)/i.test(message);
+
+  const backendAvailable = !isBackendUnavailable(homeError);
+  const showHomeHero = !searchTitle && backendAvailable && !homeLoading && !detailsLoading;
+
+  const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
+
+  const withMinimumLoading = async (task, minimumMs = 1000) => {
+    const start = Date.now();
+    try {
+      return await task();
+    } finally {
+      const elapsed = Date.now() - start;
+      if (elapsed < minimumMs) {
+        await delay(minimumMs - elapsed);
+      }
+    }
+  };
+
   useEffect(() => {
     const loadHomeData = async () => {
       setHomeError("");
@@ -90,7 +111,7 @@ export default function Home() {
     setSelectedProduct(null);
 
     try {
-      const details = await getProductById(product.id);
+      const details = await withMinimumLoading(() => getProductById(product.id));
       setSelectedProduct({ ...product, ...details });
     } catch (error) {
       setDetailsError(error?.message || "Unable to load product details.");
@@ -114,7 +135,7 @@ export default function Home() {
     setSearchResults([]);
 
     try {
-      const productsFromBackend = await getProductsByCategory(category);
+      const productsFromBackend = await withMinimumLoading(() => getProductsByCategory(category));
       setSearchResults(Array.isArray(productsFromBackend) ? productsFromBackend : []);
     } catch (error) {
       setSearchError(error?.message || "Unable to fetch category products.");
@@ -175,12 +196,12 @@ export default function Home() {
         categories={categories}
         onCategorySelect={handleCategorySelect}
         isProductDetails={!!selectedProduct}
-        onSearch={handleSearchResults}
+        onSearch={backendAvailable ? handleSearchResults : undefined}
       />
       <main className="flex-grow">
       {!selectedProduct ? (
         <div className="product-page-padding">
-          {!searchTitle && (
+          {showHomeHero && (
             <Hero
               title="Know what's inside your products"
               subtitle="Discover transparency scores and ingredient breakdowns"
@@ -202,7 +223,7 @@ export default function Home() {
         </div>
       )}
 
-      {homeError && !searchTitle && (
+      {homeError && !searchTitle && backendAvailable && (
         <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
           <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
             <p className="text-lg font-semibold">Unable to load home content</p>
@@ -212,15 +233,15 @@ export default function Home() {
       )}
 
       {homeLoading ? (
-        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
-          <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-600 shadow-sm">
-            Loading categories and products...
+        <section className="min-h-[70vh] flex items-center justify-center bg-slate-100">
+          <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
           </div>
         </section>
       ) : detailsLoading ? (
-        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
-          <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-600 shadow-sm">
-            Loading product details...
+        <section className="min-h-[70vh] flex items-center justify-center bg-slate-100">
+          <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
           </div>
         </section>
       ) : detailsError ? (
@@ -228,6 +249,15 @@ export default function Home() {
           <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
             <p className="text-lg font-semibold">Unable to load product details</p>
             <p className="mt-3">{detailsError}</p>
+          </div>
+        </section>
+      ) : !searchTitle && !backendAvailable ? (
+        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-16">
+          <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-700 shadow-sm">
+            <h2 className="text-2xl font-semibold mb-4">TruthLabel is temporarily offline</h2>
+            <p className="text-base text-gray-600">
+              The backend is not available right now, so product browsing and search are hidden. Please try again later.
+            </p>
           </div>
         </section>
       ) : !searchTitle ? (

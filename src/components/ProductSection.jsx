@@ -53,14 +53,16 @@ export default function ProductSection({ title, products = [], onViewAll, onProd
       {/* Section Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg sm:text-xl font-semibold">{title}</h2>
-        <button
-          className="text-green-600 text-xs sm:text-sm disabled:text-gray-400"
-          onClick={handleViewAll}
-          disabled={loading}
-          type="button"
-        >
-          {loading ? "Loading..." : "View all →"}
-        </button>
+        {onViewAll ? (
+          <button
+            className="text-green-600 text-xs sm:text-sm disabled:text-gray-400"
+            onClick={handleViewAll}
+            disabled={loading}
+            type="button"
+          >
+            {loading ? "Loading..." : "View all →"}
+          </button>
+        ) : null}
       </div>
 
       {errorMessage && errorType === "connectivity" ? (
