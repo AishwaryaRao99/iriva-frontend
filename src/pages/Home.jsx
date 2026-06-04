@@ -198,7 +198,7 @@ export default function Home() {
         isProductDetails={!!selectedProduct}
         onSearch={backendAvailable ? handleSearchResults : undefined}
       />
-      <main className="flex-grow">
+      <main className="flex-grow p-2">
       {!selectedProduct ? (
         <div className="product-page-padding">
           {showHomeHero && (

@@ -102,7 +102,7 @@ export default function ProductDetails({ product, onClose, backLabel }) {
   return (
     <section className="bg-white min-h-screen">
       {/* Back Button */}
-      <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 border-b border-gray-100">
+      <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 xl:py-8 border-b border-gray-100">
         <button
           type="button"
           onClick={onClose}
@@ -116,16 +116,16 @@ export default function ProductDetails({ product, onClose, backLabel }) {
 
       {/* Main Content */}
       {/* Use product-page-padding to leave 20% left/right on desktop, 5% on mobile/tablet */}
-      <div className="product-page-padding py-8 sm:py-10 bg-gray-50">
+      <div className="product-page-padding py-8 sm:py-10 xl:py-12 bg-gray-50">
         {/* Image + Details Container: keeps product image constrained in width so it doesn't stretch wide */}
         <div className="grid gap-4 lg:grid-cols-[1fr_640px] mb-8 auto-rows-max lg:auto-rows-fr">
           {/* Product Image: contained with square aspect ratio and larger desktop width */}
-          <div className="lg:col-start-1 lg:self-stretch flex items-start">
-            <div className="h-[stretch] rounded-2xl overflow-hidden bg-white shadow-sm w-full">
+          <div className="lg:col-start-1 lg:self-stretch flex items-stretch">
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-white shadow-sm w-full">
               <img
                 src={product?.imageUrl || "https://images.unsplash.com/photo-1618480066690-8457ab2b766e?w=800"}
                 alt={title}
-                className="w-full h-[stretch] object-cover aspect-square"
+                className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
               />
             </div>
