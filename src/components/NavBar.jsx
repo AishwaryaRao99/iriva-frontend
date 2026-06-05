@@ -37,7 +37,7 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
   );
 
   return (
-    <nav className="sticky top-0 z-40 flex justify-between items-center px-4 sm:px-6 md:px-8 py-4 border-b bg-white shadow-sm">
+    <nav className="sticky top-0 z-40 w-full flex justify-between items-center px-4 sm:px-6 md:px-8 py-4 border-b bg-white shadow-sm">
       <button
         type="button"
         onClick={onHome}

@@ -116,7 +116,7 @@ export default function ProductDetails({ product, onClose, backLabel }) {
 
       {/* Main Content */}
       {/* Use product-page-padding to leave 20% left/right on desktop, 5% on mobile/tablet */}
-      <div className="product-page-padding py-8 sm:py-10 xl:py-12 bg-gray-50">
+      <div className="product-page-padding py-8 sm:py-10 xl:py-12">
         {/* Image + Details Container: keeps product image constrained in width so it doesn't stretch wide */}
         <div className="grid gap-4 lg:grid-cols-[1fr_640px] mb-8 auto-rows-max lg:auto-rows-fr">
           {/* Product Image: contained with square aspect ratio and larger desktop width */}

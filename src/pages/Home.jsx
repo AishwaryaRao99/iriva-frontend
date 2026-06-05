@@ -233,13 +233,13 @@ export default function Home() {
       )}
 
       {homeLoading ? (
-        <section className="min-h-[70vh] flex items-center justify-center bg-slate-100">
+        <section className="min-h-[70vh] flex items-center justify-center bg-white">
           <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
           </div>
         </section>
       ) : detailsLoading ? (
-        <section className="min-h-[70vh] flex items-center justify-center bg-slate-100">
+        <section className="min-h-[70vh] flex items-center justify-center bg-white">
           <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
           </div>
