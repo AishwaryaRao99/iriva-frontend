@@ -123,7 +123,9 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
       {/* Profile icon */}
       <button
         type="button"
-        className="ml-4 p-2 text-gray-600 hover:text-green-600 focus:outline-none transition"
+        disabled
+        title="Coming in future update"
+        className="ml-4 p-2 text-gray-400 cursor-not-allowed focus:outline-none transition"
         aria-label="Profile"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

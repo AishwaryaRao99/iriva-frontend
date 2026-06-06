@@ -35,6 +35,8 @@ export default function Home() {
   const [homeError, setHomeError] = useState("");
   const [homeLoading, setHomeLoading] = useState(true);
 
+  const STORAGE_KEY = "truthlabel-frontend-state";
+
   const clearSearchInput = () => {
     setSearchError("");
     setSearchClearSignal((prev) => prev + 1);
@@ -46,6 +48,39 @@ export default function Home() {
 
   const backendAvailable = !isBackendUnavailable(homeError);
   const showHomeHero = !searchTitle && backendAvailable && !homeLoading && !detailsLoading;
+
+  useEffect(() => {
+    try {
+      const persisted = sessionStorage.getItem(STORAGE_KEY);
+      if (!persisted) return;
+      const parsed = JSON.parse(persisted);
+
+      if (parsed?.selectedProduct) setSelectedProduct(parsed.selectedProduct);
+      if (parsed?.searchTitle) setSearchTitle(parsed.searchTitle);
+      if (parsed?.selectedCategory) setSelectedCategory(parsed.selectedCategory);
+      if (Array.isArray(parsed?.searchResults)) setSearchResults(parsed.searchResults);
+      if (typeof parsed?.hasLoadedAllProducts === "boolean") setHasLoadedAllProducts(parsed.hasLoadedAllProducts);
+      if (Array.isArray(parsed?.allProducts)) setAllProducts(parsed.allProducts);
+    } catch (error) {
+      console.warn("Unable to restore persisted state:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const payload = {
+        selectedProduct,
+        searchTitle,
+        selectedCategory,
+        searchResults,
+        allProducts,
+        hasLoadedAllProducts,
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (error) {
+      console.warn("Unable to persist state:", error);
+    }
+  }, [selectedProduct, searchTitle, selectedCategory, searchResults, allProducts, hasLoadedAllProducts]);
 
   const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
@@ -187,6 +222,7 @@ export default function Home() {
     setSelectedProduct(null);
     setDetailsError("");
     setDetailsLoading(false);
+    sessionStorage.removeItem(STORAGE_KEY);
   };
 
   return (
@@ -215,9 +251,9 @@ export default function Home() {
           <button
             type="button"
             onClick={handleResetHome}
-            className="flex items-center gap-2 text-green-600 hover:text-green-700 font-medium text-sm sm:text-base focus:outline-none"
+            className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold text-base sm:text-lg focus:outline-none"
           >
-            <span className="text-lg">←</span>
+            <span className="text-xl">←</span>
             Back to Home
           </button>
         </div>

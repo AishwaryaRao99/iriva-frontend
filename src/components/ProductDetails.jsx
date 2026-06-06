@@ -106,10 +106,10 @@ export default function ProductDetails({ product, onClose, backLabel }) {
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-800 focus:outline-none transition"
+          className="inline-flex items-center gap-2 text-base sm:text-lg font-medium text-green-600 hover:text-green-800 focus:outline-none transition"
           aria-label="Go back"
         >
-          <span className="text-lg">←</span>
+          <span className="text-xl">←</span>
           {backLabel || "Back"}
         </button>
       </div>
@@ -177,13 +177,17 @@ export default function ProductDetails({ product, onClose, backLabel }) {
             <div className="flex gap-3 items-stretch">
               <button
                 type="button"
-                className="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none transition"
+                disabled
+                title="Coming in future update"
+                className="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed opacity-70 focus:outline-none transition"
               >
                 Save to Profile
               </button>
               <button
                 type="button"
-                className="flex-shrink-0 p-3 text-gray-400 hover:text-red-500 focus:outline-none transition border border-gray-200 rounded-lg"
+                disabled
+                title="Coming in future update"
+                className="flex-shrink-0 p-3 text-gray-400 cursor-not-allowed opacity-70 focus:outline-none transition border border-gray-200 rounded-lg"
                 aria-label="Add to favorites"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
