@@ -5,6 +5,7 @@ import ProductCard from "./ProductCard";
 import AlertMessage from "./AlertMessage";
 import DismissibleAlert from "./DismissibleAlert";
 import { getAllProducts } from "../services/searchService";
+import { formatError } from "../utils/errorUtils";
 
 /**
  * Product Section
@@ -20,6 +21,7 @@ export default function ProductSection({ title, products = [], onViewAll, onProd
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [errorType, setErrorType] = useState(""); // "connectivity" or "product_not_found"
+  const [expandedProducts, setExpandedProducts] = useState(null);
 
   const handleViewAll = async () => {
     setLoading(true);
@@ -29,20 +31,17 @@ export default function ProductSection({ title, products = [], onViewAll, onProd
     try {
       const allProducts = await getAllProducts();
 
+      // Expand this section inline with the full product list
+      setExpandedProducts(Array.isArray(allProducts) ? allProducts : []);
+
+      // Keep parent informed (existing behavior)
       if (typeof onViewAll === "function") {
         onViewAll(allProducts);
       }
     } catch (error) {
-      const errorMsg = error?.message || "Unable to fetch products. Please try again.";
-      
-      // Check for connectivity/timeout errors
-      if (errorMsg.includes("timeout") || errorMsg.includes("Cannot connect") || errorMsg.includes("TypeError")) {
-        setErrorType("connectivity");
-      } else {
-        setErrorType("product_not_found");
-      }
-      
-      setErrorMessage(errorMsg);
+      const formatted = formatError(error);
+      setErrorMessage(formatted.message);
+      setErrorType(formatted.connectivity ? "connectivity" : "product_not_found");
     } finally {
       setLoading(false);
     }
@@ -77,8 +76,8 @@ export default function ProductSection({ title, products = [], onViewAll, onProd
 
       {/* Product Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-        {products.map((product) => (
-          <ProductCard key={product.name} {...product} onInteraction={onProductInteraction} onViewDetails={onViewDetails} />
+        {(expandedProducts ?? products).map((product) => (
+          <ProductCard key={product.name ?? product.id} {...product} onInteraction={onProductInteraction} onViewDetails={onViewDetails} />
         ))}
       </div>
     </section>

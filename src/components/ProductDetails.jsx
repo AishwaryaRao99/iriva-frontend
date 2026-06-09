@@ -9,9 +9,23 @@ const statusStyles = {
 
 const iconMap = {
   "heart-icon": "❤️",
-  "tick-icon": "✓",
+  "check-icon": "✓",
   "secure-icon": "🛡️",
   "warning-icon": "⚠️",
+  "leaf-icon": "🍃",
+  "globe-icon": "🌍",
+  "doctor-icon": "🩺",
+  "shield-icon": "🛡️",
+  "bunny-icon": "🐰",
+  "eye-icon": "👁️",
+  "handshake-icon": "🤝",
+  "link-icon": "🔗",
+  "certified-icon": "✅",
+  "snowflake-icon": "❄️",
+  "tree-icon": "🌲",
+  "water-icon": "💧",
+  "flower-icon": "🌸",
+  "recycle-icon": "♻️",
 };
 
 const getIcon = (icon) => iconMap[icon] || icon || "ℹ️";

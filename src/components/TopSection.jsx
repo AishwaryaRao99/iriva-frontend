@@ -4,6 +4,7 @@ import { useCallback, useState, useEffect } from 'react';
 import { searchProducts } from '../services/searchService';
 import AlertMessage from './AlertMessage';
 import DismissibleAlert from './DismissibleAlert';
+import { formatError } from '../utils/errorUtils';
 
 /**
  * Top Section Component
@@ -48,13 +49,14 @@ export default function TopSection({ title, subtitle, onSearch, clearSearchSigna
         onSearch(searchQuery, results);
       }
     } catch (error) {
-      const errorMessage = error.message || 'An unexpected error occurred during search.';
+      const formatted = formatError(error);
+      const errorMessage = formatted.message || 'An unexpected error occurred during search.';
       
       // Check for connectivity/timeout errors
-      if (errorMessage.includes('timeout') || errorMessage.includes('Cannot connect') || errorMessage.includes('TypeError')) {
+      if (formatted.connectivity) {
         setSearchErrorType('connectivity');
         setSearchError(errorMessage);
-      } else if (error?.errorCode === 'PRD_001' || errorMessage.includes('Product not found')) {
+      } else if (error?.errorCode === 'PRD_001' || (error?.message || '').includes('Product not found')) {
         // For product not found errors, navigate to SearchResults with empty results
         // so SearchResults can display the "Product Not Found" info message
         if (onSearch) {

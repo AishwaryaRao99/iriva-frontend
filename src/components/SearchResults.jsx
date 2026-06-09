@@ -41,23 +41,90 @@ export default function SearchResults({ title, results = [], loading = false, er
     setDismissedError(false);
   }, [error]);
 
+  const errorMessage = typeof error === "string" ? error : error?.message || "";
   const errorType = useMemo(() => {
-    if (!error) return null;
-    
-    // Check for connectivity/timeout errors
-    if (error.includes('timeout') || error.includes('Cannot connect') || error.includes('TypeError')) {
+    if (!errorMessage) return null;
+    if (error?.connectivity) return "connectivity";
+    // fallback keyword checks on raw message
+    const raw = typeof error === "string" ? error : error?.raw || errorMessage;
+    if (raw && (raw.toLowerCase().includes('timeout') || raw.toLowerCase().includes('cannot connect') || raw.toLowerCase().includes('typeerror'))) {
       return 'connectivity';
     }
-    
     return 'not_found';
-  }, [error]);
+  }, [error, errorMessage]);
 
-  const isSearchPage = title.toLowerCase().startsWith('search results for');
+  const isSearchPage = title && typeof title === 'string' && title.toLowerCase().startsWith('search results for');
+
+  // Helper: normalize transparency score to percent (0-100)
+  const transparencyPercent = (product) => {
+    const raw = product?.transparencyScore ?? product?.transparency ?? 0;
+    const n = typeof raw === 'number' ? raw : Number(raw) || 0;
+    return n <= 10 ? Math.round(n * 10) : Math.round(n);
+  };
+
+  const hasEthicalFlag = (product, flag) => {
+    const summary = Array.isArray(product?.ethicalSummary) ? product.ethicalSummary : [];
+    const descriptionText = typeof product?.description === 'string' ? product.description : '';
+    const normalized = [
+      summary.map((s) => (typeof s === 'string' ? s : s?.title || s?.description || '')).join(' '),
+      descriptionText,
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    if (flag === 'vegan') return normalized.includes('vegan')|| normalized.includes('plant-based')|| normalized.includes('100% natural')|| normalized.includes('Plant-derived');
+    if (flag === 'cruelty_free') return normalized.includes('no animal testing') || normalized.includes('cruelty-free');
+    if (flag === 'no_harmful') return normalized.includes('harmful') && !normalized.includes('toxic');
+    return false;
+  };
+
+  const filteredResults = useMemo(() => {
+    if (!Array.isArray(results)) return [];
+    if (!activeFilters || activeFilters.length === 0) return results;
+    if (activeFilters.includes('all')) return results;
+
+    const riskFilters = activeFilters.filter((id) => id === 'low_risk' || id === 'medium_risk' || id === 'high_risk');
+    const ethicalFilters = activeFilters.filter((id) => id === 'vegan' || id === 'cruelty_free' || id === 'no_harmful');
+
+    return results.filter((product) => {
+      // Ethical filters: all selected ethical filters must be satisfied (AND)
+      for (const f of ethicalFilters) {
+        if (!hasEthicalFlag(product, f)) return false;
+      }
+
+      // Risk filters: if none selected, accept; if any selected, product matches if it satisfies any of them (OR)
+      if (riskFilters.length > 0) {
+        const pct = transparencyPercent(product);
+        const matches = riskFilters.some((rf) => {
+          if (rf === 'low_risk') return pct >= 70;
+          if (rf === 'medium_risk') return pct >= 40 && pct < 70;
+          if (rf === 'high_risk') return pct < 40;
+          return false;
+        });
+        if (!matches) return false;
+      }
+
+      return true;
+    });
+  }, [results, activeFilters]);
 
   const toggleFilter = (id) => {
-    setActiveFilters((current) =>
-      current.includes(id) ? current.filter((filterId) => filterId !== id) : [...current, id]
-    );
+    setActiveFilters((current) => {
+      // If toggling the 'all' filter, reset to only 'all'
+      if (id === 'all') return ['all'];
+
+      // If 'all' is currently selected and user chooses a specific filter, remove 'all'
+      const withoutAll = current.filter((c) => c !== 'all');
+
+      if (withoutAll.includes(id)) {
+        // Unselecting the filter
+        const next = withoutAll.filter((c) => c !== id);
+        return next.length > 0 ? next : ['all'];
+      }
+
+      // Selecting a new specific filter
+      return [...withoutAll, id];
+    });
   };
 
   return (
@@ -68,7 +135,7 @@ export default function SearchResults({ title, results = [], loading = false, er
           <p className="text-sm text-gray-600 mt-1">
             {loading
               ? "Loading products..."
-              : `${results.length} product${results.length === 1 ? "" : "s"} found`}
+              : `${filteredResults.length} product${filteredResults.length === 1 ? "" : "s"} found`}
           </p>
         </div>
 
@@ -140,27 +207,27 @@ export default function SearchResults({ title, results = [], loading = false, er
         )}
 
         <main>
-          {error && !dismissedError && errorType === 'connectivity' ? (
-            <DismissibleAlert type="error" title="Connection Error" message={error} onDismiss={() => setDismissedError(true)} />
+          {errorMessage && !dismissedError && errorType === 'connectivity' ? (
+              <DismissibleAlert type="error" title="Connection Error" message={errorMessage} onDismiss={() => setDismissedError(true)} />
           ) : loading ? (
             <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center text-gray-500">
               Loading results...
             </div>
           ) : (
             <>
-              {results.length === 0 ? (
-                <AlertMessage
-                  type="info"
-                  title={isSearchPage ? "Product Not Found" : "No products found"}
-                  message="Try another search term or category to see available products."
-                />
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {results.map((product) => (
-                    <ProductCard key={product.id ?? product.name} {...product} onInteraction={onProductInteraction} onViewDetails={onViewDetails} />
-                  ))}
-                </div>
-              )}
+                {filteredResults.length === 0 ? (
+                  <AlertMessage
+                    type="info"
+                    title={isSearchPage ? "Product Not Found" : "No products found"}
+                    message="Try another search term or category to see available products."
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {filteredResults.map((product) => (
+                      <ProductCard key={product.id ?? product.name} {...product} onInteraction={onProductInteraction} onViewDetails={onViewDetails} />
+                    ))}
+                  </div>
+                )}
             </>
           )}
         </main>

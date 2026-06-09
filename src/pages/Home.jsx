@@ -16,6 +16,7 @@ import {
   getAllProducts,
   getCategories,
 } from "../services/searchService";
+import { formatError } from "../utils/errorUtils";
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -42,9 +43,10 @@ export default function Home() {
     setSearchClearSignal((prev) => prev + 1);
   };
 
-  const isBackendUnavailable = (message) =>
-    typeof message === "string" &&
-    /(Cannot connect to backend|Request timed out|Failed to fetch|NetworkError)/i.test(message);
+  const isBackendUnavailable = (messageOrObj) => {
+    const raw = typeof messageOrObj === "string" ? messageOrObj : messageOrObj?.raw || messageOrObj?.message || "";
+    return /(Cannot connect to backend|Request timed out|Failed to fetch|NetworkError)/i.test(raw);
+  };
 
   const backendAvailable = !isBackendUnavailable(homeError);
   const showHomeHero = !searchTitle && backendAvailable && !homeLoading && !detailsLoading;
@@ -65,6 +67,27 @@ export default function Home() {
       console.warn("Unable to restore persisted state:", error);
     }
   }, []);
+
+  // After restoring persisted state, if there is a selected category but no search results,
+  // attempt to fetch the category products so refreshing the page preserves the view.
+  useEffect(() => {
+    if (!selectedCategory) return;
+    if (Array.isArray(searchResults) && searchResults.length > 0) return;
+
+    // Fetch category products if needed
+    (async () => {
+      try {
+        setSearchLoading(true);
+        const productsFromBackend = await getProductsByCategory(selectedCategory);
+        setSearchResults(Array.isArray(productsFromBackend) ? productsFromBackend : []);
+        setSearchTitle(`${selectedCategory} Products`);
+      } catch (err) {
+        setSearchError(formatError(err));
+      } finally {
+        setSearchLoading(false);
+      }
+    })();
+  }, [selectedCategory]);
 
   useEffect(() => {
     try {
@@ -128,10 +151,21 @@ export default function Home() {
         setCategories(formattedCategories);
 
         const loadedProducts = Array.isArray(productData) ? productData : [];
-        setTrendingProducts(loadedProducts);
-        setRecentProducts(loadedProducts);
+
+        // Choose up to 4 random products for trending and recently reviewed views
+        const sample = (arr, n) => {
+          const copy = Array.isArray(arr) ? [...arr] : [];
+          for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+          }
+          return copy.slice(0, n);
+        };
+
+        setTrendingProducts(sample(loadedProducts, 4));
+        setRecentProducts(sample(loadedProducts, 4));
       } catch (error) {
-        setHomeError(error?.message || "Unable to load categories and products.");
+        setHomeError(formatError(error));
       } finally {
         setHomeLoading(false);
       }
@@ -149,7 +183,7 @@ export default function Home() {
       const details = await withMinimumLoading(() => getProductById(product.id));
       setSelectedProduct({ ...product, ...details });
     } catch (error) {
-      setDetailsError(error?.message || "Unable to load product details.");
+      setDetailsError(formatError(error));
     } finally {
       setDetailsLoading(false);
     }
@@ -173,7 +207,7 @@ export default function Home() {
       const productsFromBackend = await withMinimumLoading(() => getProductsByCategory(category));
       setSearchResults(Array.isArray(productsFromBackend) ? productsFromBackend : []);
     } catch (error) {
-      setSearchError(error?.message || "Unable to fetch category products.");
+      setSearchError(formatError(error));
     } finally {
       setSearchLoading(false);
     }
@@ -200,7 +234,7 @@ export default function Home() {
       const fetchedResults = await searchProducts(query);
       setSearchResults(Array.isArray(fetchedResults) ? fetchedResults : []);
     } catch (error) {
-      setSearchError(error?.message || "Unable to search for products.");
+      setSearchError(formatError(error));
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
@@ -263,7 +297,7 @@ export default function Home() {
         <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
           <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
             <p className="text-lg font-semibold">Unable to load home content</p>
-            <p className="mt-3">{homeError}</p>
+            <p className="mt-3">{homeError?.message || String(homeError)}</p>
           </div>
         </section>
       )}
@@ -284,7 +318,7 @@ export default function Home() {
         <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
           <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
             <p className="text-lg font-semibold">Unable to load product details</p>
-            <p className="mt-3">{detailsError}</p>
+              <p className="mt-3">{detailsError?.message || String(detailsError)}</p>
           </div>
         </section>
       ) : !searchTitle && !backendAvailable ? (
@@ -292,7 +326,7 @@ export default function Home() {
           <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-700 shadow-sm">
             <h2 className="text-2xl font-semibold mb-4">TruthLabel is temporarily offline</h2>
             <p className="text-base text-gray-600">
-              The backend is not available right now, so product browsing and search are hidden. Please try again later.
+              Unable to connect to the server. Please check your internet connection or try again later. If the issue persists, contact <a href="mailto:aishwaryarao669@gmail.com" className="text-green-600 hover:underline">here</a>.
             </p>
           </div>
         </section>
@@ -319,24 +353,6 @@ export default function Home() {
             onProductInteraction={clearSearchInput}
             onViewDetails={handleProductSelect}
           />
-
-          {hasLoadedAllProducts ? (
-            <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-8 sm:py-10">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold">All Products</h2>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-                {allProducts.length > 0 ? (
-                  allProducts.map((product) => (
-                    <ProductCard key={product.id ?? product.name} {...product} onInteraction={clearSearchInput} onViewDetails={handleProductSelect} />
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-600">No products were returned from the backend.</p>
-                )}
-              </div>
-            </section>
-          ) : null}
         </>
       ) : (
         <SearchResults
