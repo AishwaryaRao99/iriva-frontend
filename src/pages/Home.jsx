@@ -18,7 +18,7 @@ import {
 } from "../services/searchService";
 import { formatError } from "../utils/errorUtils";
 
-export default function Home() {
+export default function Home({ onLogout }) {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchTitle, setSearchTitle] = useState("");
   const [searchResults, setSearchResults] = useState([]);

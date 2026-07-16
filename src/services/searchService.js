@@ -8,6 +8,10 @@ const ALL_PRODUCTS_ENDPOINT = `${API_BASE_URL}/get-all-products`;
 const CATEGORY_PRODUCTS_ENDPOINT = `${API_BASE_URL}/by-category`;
 const CATEGORIES_ENDPOINT = `${API_BASE_URL}/categories`;
 const TIMEOUT_DURATION_MS = 10000;
+const DEFAULT_FETCH_OPTIONS = {
+  credentials: "include",
+  mode: "cors",
+};
 
 /**
  * Perform a JSON fetch request with timeout handling.
@@ -21,9 +25,9 @@ const fetchJson = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(endpoint, {
+      ...DEFAULT_FETCH_OPTIONS,
       ...options,
       signal: controller.signal,
-      mode: "cors",
     });
 
     clearTimeout(timeoutId);

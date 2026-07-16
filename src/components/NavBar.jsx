@@ -9,8 +9,9 @@ import { useState, useCallback } from "react";
  * - isProductDetails (boolean) - hide Home/Categories when viewing product details
  * - onSearch (function) - callback when search is performed
  */
-export default function Navbar({ onHome, categories = [], onCategorySelect, isProductDetails = false, onSearch }) {
+export default function Navbar({ onHome, categories = [], onCategorySelect, isProductDetails = false, onSearch, onLogout }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
 
@@ -121,17 +122,34 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
       )}
 
       {/* Profile icon */}
-      <button
-        type="button"
-        disabled
-        title="Coming in future update"
-        className="ml-4 p-2 text-gray-400 cursor-not-allowed focus:outline-none transition"
-        aria-label="Profile"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-        </svg>
-      </button>
+      <div className="relative ml-4">
+        <button
+          type="button"
+          onClick={() => setIsProfileMenuOpen((open) => !open)}
+          className={`p-2 rounded-full focus:outline-none transition ${onLogout ? "text-green-700 hover:bg-green-50" : "text-gray-400 cursor-not-allowed"}`}
+          aria-label="Profile"
+          title={onLogout ? "Open profile menu" : "Profile actions unavailable"}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+          </svg>
+        </button>
+
+        {onLogout && isProfileMenuOpen && (
+          <div className="absolute right-0 mt-2 w-44 rounded-2xl border border-gray-200 bg-white shadow-lg z-50">
+            <button
+              type="button"
+              onClick={() => {
+                setIsProfileMenuOpen(false);
+                onLogout();
+              }}
+              className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none"
+            >
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
     </nav>
   );
 }
