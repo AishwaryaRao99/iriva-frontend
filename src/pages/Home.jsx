@@ -267,6 +267,7 @@ export default function Home({ onLogout }) {
         onCategorySelect={handleCategorySelect}
         isProductDetails={!!selectedProduct}
         onSearch={backendAvailable ? handleSearchResults : undefined}
+        onLogout={onLogout}
       />
       <main className="flex-grow p-2">
       {!selectedProduct ? (

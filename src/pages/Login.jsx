@@ -37,7 +37,7 @@ export default function Login({ onLoginSuccess }) {
 
           <form onSubmit={handleSubmit} className="space-y-5 text-left">
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Email/UserName</span>
+              <span className="text-sm font-medium text-slate-700">Email / User Name</span>
               <input
                 type="text"
                 value={identifier}
