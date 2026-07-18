@@ -3,6 +3,8 @@ import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
 import { logout as logoutRequest } from "./services/authService.js";
 
+const HOME_STATE_STORAGE_KEY = "truthlabel-frontend-state";
+
 function App() {
   const initialAuth = sessionStorage.getItem("truthlabel-authenticated") === "true";
   const [isAuthenticated, setIsAuthenticated] = useState(initialAuth);
@@ -35,6 +37,7 @@ function App() {
 
   const handleLoginSuccess = () => {
     sessionStorage.setItem("truthlabel-authenticated", "true");
+    sessionStorage.removeItem(HOME_STATE_STORAGE_KEY);
     setIsAuthenticated(true);
   };
 
@@ -46,6 +49,7 @@ function App() {
     }
 
     sessionStorage.removeItem("truthlabel-authenticated");
+    sessionStorage.removeItem(HOME_STATE_STORAGE_KEY);
     setIsAuthenticated(false);
     window.history.replaceState({}, "", "/login");
     setCurrentPath("/login");
