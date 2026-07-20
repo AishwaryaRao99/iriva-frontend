@@ -23,7 +23,8 @@ export default function Login({ onLoginSuccess }) {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.2),_transparent_35%),linear-gradient(180deg,_#0f766e_0%,_#134e4a_100%)] flex items-center justify-center px-4 py-10">
+    <div className=" min-h-screen bg-repeat-round bg-[url(https://images.unsplash.com/photo-1558741072-b7db02d64308?w=1920&q=80)]  px-4 py-10">
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/70 via-emerald-800/60 to-blue-900/70 flex items-center justify-center" >
       <div className="w-full max-w-md bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl overflow-hidden">
         <div className="px-10 py-8 text-center bg-white/90">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-green-600 text-white mx-auto mb-5">
@@ -38,7 +39,7 @@ export default function Login({ onLoginSuccess }) {
           <form onSubmit={handleSubmit} className="space-y-5 text-left">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Email / User Name</span>
-              <input
+              <input  
                 type="text"
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
@@ -93,6 +94,7 @@ export default function Login({ onLoginSuccess }) {
             Don&apos;t have an account? <span className="text-green-600">Sign up</span>
           </p>
         </div>
+      </div>
       </div>
     </div>
   );
