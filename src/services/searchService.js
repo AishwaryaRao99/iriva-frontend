@@ -45,6 +45,49 @@ const normalizePageResponse = (response) => {
   return [];
 };
 
+const parseErrorResponse = async (response) => {
+  const text = await response.text().catch(() => "");
+  if (!text) return "";
+
+  try {
+    const body = JSON.parse(text);
+
+    if (typeof body === "string") {
+      return body;
+    }
+
+    if (body?.message) {
+      return body.message;
+    }
+
+    if (Array.isArray(body?.errors)) {
+      return body.errors
+        .map((errorItem) => {
+          if (typeof errorItem === "string") return errorItem;
+          if (errorItem?.defaultMessage) return errorItem.defaultMessage;
+          if (errorItem?.message) return errorItem.message;
+          if (errorItem?.field) {
+            return `${errorItem.field}: ${errorItem.defaultMessage || errorItem.message || JSON.stringify(errorItem)}`;
+          }
+          return JSON.stringify(errorItem);
+        })
+        .join("; ");
+    }
+
+    if (body?.error) {
+      if (typeof body.error === "string") return body.error;
+      if (Array.isArray(body.error)) return body.error.join("; ");
+    }
+
+    const values = Object.values(body).flatMap((value) =>
+      Array.isArray(value) ? value : [value]
+    );
+    return values.filter(Boolean).join("; ") || text;
+  } catch {
+    return text;
+  }
+};
+
 /**
  * Perform a JSON fetch request with timeout handling.
  * @param {string} endpoint - URL to request.
@@ -65,8 +108,8 @@ const fetchJson = async (endpoint, options = {}) => {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const fallbackText = await response.text().catch(() => "");
-      
+      const fallbackText = await parseErrorResponse(response);
+
       // Handle PRD_001 error code (product not found)
       if (response.status === 404 && fallbackText.includes("PRD_001")) {
         const error = new Error("Product not found");
@@ -74,8 +117,11 @@ const fetchJson = async (endpoint, options = {}) => {
         throw error;
       }
 
-      const message = `Server error ${response.status}: ${response.statusText}`;
-      throw new Error(fallbackText ? `${message} - ${fallbackText}` : message);
+      const message = fallbackText || `Server error ${response.status}: ${response.statusText}`;
+      const error = new Error(message);
+      error.status = response.status;
+      error.raw = fallbackText;
+      throw error;
     }
 
     return await response.json();

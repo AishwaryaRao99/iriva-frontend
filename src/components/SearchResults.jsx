@@ -45,12 +45,15 @@ export default function SearchResults({ title, results = [], loading = false, er
   const errorType = useMemo(() => {
     if (!errorMessage) return null;
     if (error?.connectivity) return "connectivity";
-    // fallback keyword checks on raw message
+
     const raw = typeof error === "string" ? error : error?.raw || errorMessage;
     if (raw && (raw.toLowerCase().includes('timeout') || raw.toLowerCase().includes('cannot connect') || raw.toLowerCase().includes('typeerror'))) {
       return 'connectivity';
     }
-    return 'not_found';
+    if (raw && /product not found|not found/i.test(raw)) {
+      return 'not_found';
+    }
+    return 'error';
   }, [error, errorMessage]);
 
   const isSearchPage = title && typeof title === 'string' && title.toLowerCase().startsWith('search results for');
@@ -207,8 +210,12 @@ export default function SearchResults({ title, results = [], loading = false, er
         )}
 
         <main>
-          {errorMessage && !dismissedError && errorType === 'connectivity' ? (
+          {errorMessage && !dismissedError ? (
+            errorType === 'connectivity' ? (
               <DismissibleAlert type="error" title="Connection Error" message={errorMessage} onDismiss={() => setDismissedError(true)} />
+            ) : (
+              <AlertMessage type="error" title="Error" message={errorMessage} />
+            )
           ) : loading ? (
             <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center text-gray-500">
               Loading results...
