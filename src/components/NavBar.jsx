@@ -43,9 +43,9 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
         type="button"
         onClick={onHome}
         className="text-green-600 font-bold text-lg focus:outline-none hover:opacity-80 transition"
-        aria-label="TruthLabel Home"
+        aria-label="Iriva Home"
       >
-        🌿 TruthLabel
+        🌿 Iriva
       </button>
 
       <div className="flex gap-4 sm:gap-6 text-gray-700 items-center flex-1 justify-center lg:justify-start ml-6">

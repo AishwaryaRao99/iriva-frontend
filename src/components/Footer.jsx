@@ -14,7 +14,7 @@ export default function Footer() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
         {/* Brand */}
         <div>
-          <h3 className="font-bold mb-2 text-sm sm:text-base">TruthLabel</h3>
+          <h3 className="font-bold mb-2 text-sm sm:text-base">Iriva</h3>
           <p className="text-xs sm:text-sm text-gray-400 max-w-lg">
             Making product transparency accessible to everyone.
           </p>
@@ -40,13 +40,13 @@ export default function Footer() {
       </div>
 
       <p className="text-center text-gray-500 mt-6 text-xs sm:text-sm">
-        © 2026 TruthLabel
+        © 2026 Iriva
       </p>
 
       {showPrivacy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div role="dialog" aria-modal="true" className="bg-white max-w-2xl items-center w-full rounded-lg p-6 mx-4">
-            <h3 className="text-lg font-bold mb-3 text-gray-900 text-center">TruthLabel Privacy (MVP)</h3>
+            <h3 className="text-lg font-bold mb-3 text-gray-900 text-center">Iriva Privacy (MVP)</h3>
             <div className="text-sm text-gray-700 space-y-3 mb-4">
               <p>
                 We collect minimal product and usage data to provide transparency scores and improve recommendations. We do not collect personal data unless you explicitly provide it.

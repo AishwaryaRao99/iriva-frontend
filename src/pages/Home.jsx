@@ -36,7 +36,7 @@ export default function Home({ onLogout }) {
   const [homeError, setHomeError] = useState("");
   const [homeLoading, setHomeLoading] = useState(true);
 
-  const STORAGE_KEY = "truthlabel-frontend-state";
+  const STORAGE_KEY = "iriva-frontend-state";
 
   const clearSearchInput = () => {
     setSearchError("");
@@ -325,7 +325,7 @@ export default function Home({ onLogout }) {
       ) : !searchTitle && !backendAvailable ? (
         <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-16">
           <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-700 shadow-sm">
-            <h2 className="text-2xl font-semibold mb-4">TruthLabel is temporarily offline</h2>
+            <h2 className="text-2xl font-semibold mb-4">Iriva is temporarily offline</h2>
             <p className="text-base text-gray-600">
               Unable to connect to the server. Please check your internet connection or try again later. If the issue persists, contact <a href="mailto:aishwaryarao669@gmail.com" className="text-green-600 hover:underline">here</a>.
             </p>
