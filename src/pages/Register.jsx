@@ -30,9 +30,10 @@ export default function Register({ onBackToLogin }) {
 
     try {
       await register({
-        fullName: fullName.trim(),
+        username: fullName.trim(),
         email: email.trim(),
         password,
+        confirmPassword,
       });
       setSuccess("Account created successfully. You can now sign in.");
     } catch (registrationError) {

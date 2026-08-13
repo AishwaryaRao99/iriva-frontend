@@ -55,16 +55,17 @@ export const login = async (email, password) => {
   });
 };
 
-export const register = async ({ fullName, email, password }) => {
+export const register = async ({ username, email, password, confirmPassword }) => {
   validateAuthInputs(email, password);
 
   return sendRequest("register", {
     ...DEFAULT_FETCH_OPTIONS,
     method: "POST",
     body: JSON.stringify({
-      fullName,
+      username,
       email,
       password,
+      confirmPassword,
     }),
   });
 };
@@ -75,5 +76,13 @@ export const logout = async () => {
   return sendRequest("logout", {
     ...DEFAULT_FETCH_OPTIONS,
     method: "POST",
+  });
+};
+
+
+export const getCurrentUser = async () => {
+  return sendRequest("me", {
+    ...DEFAULT_FETCH_OPTIONS,
+    method: "GET",
   });
 };

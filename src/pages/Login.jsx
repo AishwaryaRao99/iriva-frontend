@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { login } from "../services/authService.js";
+import { login, getGoogleAuthorizationUrl } from "../services/authService.js";
 import Register from "./Register.jsx";
 
 export default function Login({ onLoginSuccess }) {
@@ -92,10 +92,11 @@ export default function Login({ onLoginSuccess }) {
 
             <button
               type="button"
-              onClick={() => setView("register")}
-              className="mt-5 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 bg-white shadow-sm transition hover:bg-slate-50"
+              onClick={() => (window.location.href = getGoogleAuthorizationUrl())}
+              className="mt-5 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 bg-white shadow-sm transition hover:bg-slate-50 flex items-center justify-center gap-2"
             >
-              Sign up with email
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chrome w-5 h-5" data-fg-caxq49=":0:node_modules/lucide-react:122:13:4909:30:e:Chrome::::::C1yS" data-fgid-caxq49=":r44:"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" x2="12" y1="8" y2="8"></line><line x1="3.95" x2="8.54" y1="6.06" y2="14"></line><line x1="10.88" x2="15.46" y1="21.94" y2="14"></line></svg>
+              Continue with Google
             </button>
 
             <p className="mt-6 text-xs text-slate-500">
