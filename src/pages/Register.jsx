@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getGoogleAuthorizationUrl, register } from "../services/authService.js";
+import CustomAlertModal from "../components/CustomAlertModal";
+import TERMS_TEXT from "../content/terms.md?raw";
+import PRIVACY_TEXT from "../content/privacy.md?raw";
+import UI_CONFIG from "../config/uiConfig";
 
 export default function Register({ onBackToLogin }) {
   const [fullName, setFullName] = useState("");
@@ -10,11 +14,18 @@ export default function Register({ onBackToLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState('info');
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const handleRegister = async (event) => {
     event.preventDefault();
     setError("");
     setSuccess("");
+    setFieldErrors({});
 
     if (!acceptedTerms) {
       setError("Please agree to the Terms of Service and Privacy Policy.");
@@ -35,13 +46,32 @@ export default function Register({ onBackToLogin }) {
         password,
         confirmPassword,
       });
-      setSuccess("Account created successfully. You can now sign in.");
+      const message = 'Account created successfully. You can now sign in.';
+      setModalType('success');
+      setModalMessage(message);
+      setModalOpen(true);
     } catch (registrationError) {
-      setError(registrationError.message || "Registration failed. Please try again.");
+      // If server returned structured field errors, surface them inline instead of showing a modal
+      const serverBody = registrationError?.body;
+      if (serverBody && Array.isArray(serverBody.fieldErrors) && serverBody.fieldErrors.length > 0) {
+        const map = {};
+        serverBody.fieldErrors.forEach((fe) => {
+          if (fe?.field) map[fe.field] = fe.message || fe.defaultMessage || '';
+        });
+        setFieldErrors(map);
+        setError(serverBody.message || registrationError?.message || "Validation failed.");
+      } else {
+        const msg = registrationError?.message || "Registration failed. Please try again.";
+        setModalType('error');
+        setModalMessage(msg);
+        setModalOpen(true);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // no-op — auto-close handled by CustomAlertModal via `autoCloseMs` prop
 
   const handleGoogleSignUp = () => {
     window.location.assign(getGoogleAuthorizationUrl());
@@ -96,6 +126,7 @@ export default function Register({ onBackToLogin }) {
                 placeholder="Jane Smith"
                 autoComplete="name"
               />
+              {fieldErrors?.username && <p className="text-sm text-red-600 mt-2">{fieldErrors.username}</p>}
             </label>
 
             <label className="block">
@@ -108,6 +139,7 @@ export default function Register({ onBackToLogin }) {
                 placeholder="you@example.com"
                 autoComplete="email"
               />
+              {fieldErrors?.email && <p className="text-sm text-red-600 mt-2">{fieldErrors.email}</p>}
             </label>
 
             <label className="block">
@@ -120,6 +152,7 @@ export default function Register({ onBackToLogin }) {
                 placeholder="••••••••"
                 autoComplete="new-password"
               />
+              {fieldErrors?.password && <p className="text-sm text-red-600 mt-2">{fieldErrors.password}</p>}
             </label>
 
             <label className="block">
@@ -132,6 +165,7 @@ export default function Register({ onBackToLogin }) {
                 placeholder="••••••••"
                 autoComplete="new-password"
               />
+              {fieldErrors?.confirmPassword && <p className="text-sm text-red-600 mt-2">{fieldErrors.confirmPassword}</p>}
             </label>
 
             <label className="flex items-start gap-3 text-sm text-slate-600">
@@ -142,13 +176,17 @@ export default function Register({ onBackToLogin }) {
                 className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
               />
               <span>
-                I agree to Iriva&apos;s <button type="button" className="font-semibold text-emerald-600 hover:text-emerald-700">Terms of Service</button> and{' '}
-                <button type="button" className="font-semibold text-emerald-600 hover:text-emerald-700">Privacy Policy</button>.
+                I agree to Iriva&apos;s <button type="button" onClick={() => setShowTerms(true)} className="font-semibold text-emerald-600 hover:text-emerald-700">Terms of Service</button> and{' '}
+                <button type="button" onClick={() => setShowPrivacy(true)} className="font-semibold text-emerald-600 hover:text-emerald-700">Privacy Policy</button>.
               </span>
             </label>
 
             {error && <p className="text-sm text-red-600">{error}</p>}
-            {success && <p className="text-sm text-emerald-700">{success}</p>}
+
+            <CustomAlertModal open={modalOpen} title={modalType === 'success' ? 'Success' : modalType === 'error' ? 'Error' : 'Notice'} message={modalMessage} type={modalType} autoCloseMs={UI_CONFIG.modalAutoCloseMs} onClose={() => { setModalOpen(false); if (modalType === 'success') onBackToLogin(); }} />
+
+            <CustomAlertModal open={showTerms} title="Terms of Service" message={TERMS_TEXT} renderMarkdown={true} onClose={() => setShowTerms(false)} />
+            <CustomAlertModal open={showPrivacy} title="Privacy Policy" message={PRIVACY_TEXT} renderMarkdown={true} onClose={() => setShowPrivacy(false)} />
 
             <button
               type="submit"

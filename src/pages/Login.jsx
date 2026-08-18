@@ -1,6 +1,8 @@
 import { useState } from "react";
+import UI_CONFIG from "../config/uiConfig";
 import { login, getGoogleAuthorizationUrl } from "../services/authService.js";
 import Register from "./Register.jsx";
+import CustomAlertModal from "../components/CustomAlertModal";
 
 export default function Login({ onLoginSuccess }) {
   const [view, setView] = useState("login");
@@ -8,6 +10,9 @@ export default function Login({ onLoginSuccess }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState('info');
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -15,14 +20,21 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      await login(email.trim(), password);
+      const res = await login(email.trim(), password);
+      // On successful login proceed immediately without showing a modal
+      setModalOpen(false);
       onLoginSuccess();
     } catch (loginError) {
-      setError(loginError.message || "Login failed. Please try again.");
+      const msg = loginError?.message || 'Login failed. Please try again.';
+      setModalType('error');
+      setModalMessage(msg);
+      setModalOpen(true);
     } finally {
       setLoading(false);
     }
   };
+
+  // auto-close value will be passed from UI config
 
   if (view === "register") {
     return <Register onBackToLogin={() => setView("login")} />;
@@ -67,7 +79,7 @@ export default function Login({ onLoginSuccess }) {
                 />
               </label>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              
 
               <button
                 type="submit"
@@ -112,6 +124,18 @@ export default function Login({ onLoginSuccess }) {
           </div>
         </div>
       </div>
+      <CustomAlertModal
+        open={modalOpen}
+        title={modalType === 'success' ? 'Success' : modalType === 'error' ? 'Error' : 'Notice'}
+        message={modalMessage}
+        type={modalType}
+        autoCloseMs={UI_CONFIG.modalAutoCloseMs}
+        onClose={() => {
+          setModalOpen(false);
+          if (modalType === 'success') onLoginSuccess();
+        }}
+      />
     </div>
   );
 }
+

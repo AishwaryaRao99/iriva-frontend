@@ -46,6 +46,60 @@ const formatScore = (score) => {
  */
 export default function ProductDetails({ product, onClose, backLabel }) {
   const [activeTab, setActiveTab] = useState("ingredients");
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newReviewText, setNewReviewText] = useState("");
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [reviews, setReviews] = useState(() =>
+    Array.isArray(product?.reviews)
+      ? product.reviews
+      : [
+          {
+            id: 1,
+            name: "Sarah M.",
+            rating: 5,
+            time: "2 weeks ago",
+            text: "Love how transparent this brand is about their ingredients. Finally found a serum that works!",
+            tags: ["Effective", "Gentle"],
+            helpful: 24,
+          },
+          {
+            id: 2,
+            name: "Mike T.",
+            rating: 4,
+            time: "1 month ago",
+            text: "Great product but wish it was completely paraben-free. Still better than most alternatives.",
+            tags: ["Good Value", "Works Well"],
+            helpful: 18,
+          },
+        ]
+  );
+
+  const totalReviews = reviews.length;
+  const averageRating = totalReviews > 0 ? (reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / totalReviews).toFixed(1) : "0.0";
+  const ratingCounts = [0, 0, 0, 0, 0, 0];
+  reviews.forEach((r) => (ratingCounts[Number(r.rating) || 0] += 1));
+
+  const handleStartReview = () => setShowReviewForm(true);
+  const handleCancelReview = () => {
+    setShowReviewForm(false);
+    setNewReviewRating(5);
+    setNewReviewText("");
+  };
+
+  const handleSubmitReview = (e) => {
+    e?.preventDefault?.();
+    const newReview = {
+      id: Date.now(),
+      name: "You",
+      rating: Number(newReviewRating) || 5,
+      time: "Just now",
+      text: newReviewText || "",
+      tags: [],
+      helpful: 0,
+    };
+    setReviews((prev) => [newReview, ...prev]);
+    handleCancelReview();
+  };
 
   const scorePercent = formatScore(product?.transparencyScore ?? product?.transparency ?? 0);
   const title = product?.productName || product?.name || "Product Details";
@@ -336,10 +390,114 @@ export default function ProductDetails({ product, onClose, backLabel }) {
 
                 {activeTab === "reviews" && (
                   <div>
-                    <h3 className="text-2xl font-semibold text-gray-900 mb-4">Community Reviews</h3>
-                    <p className="text-gray-600 text-base">
-                      Community reviews coming soon. Share your experience and read what others think about this product.
-                    </p>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-2xl font-semibold text-gray-900 mb-2">Community Reviews</h3>
+                        <p className="text-gray-600 text-base mb-4">See what other customers say and share your experience.</p>
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleStartReview}
+                          className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 focus:outline-none"
+                        >
+                          Add Review
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Ratings Summary */}
+                    <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                      <div className="md:flex md:items-center md:gap-8">
+                        <div className="md:flex-shrink-0">
+                          <div className="text-4xl font-bold text-gray-900">{averageRating}</div>
+                          <div className="text-sm text-gray-500">Based on {totalReviews} reviews</div>
+                        </div>
+
+                        <div className="mt-4 md:mt-0 md:flex-1">
+                          {Array.from({ length: 5 }).map((_, i) => {
+                            const star = 5 - i;
+                            const count = ratingCounts[star] || 0;
+                            const pct = totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
+                            return (
+                              <div key={star} className="flex items-center gap-4 my-2">
+                                <div className="w-12 text-sm text-gray-600">{star} star</div>
+                                <div className="flex-1 h-3 rounded-full bg-slate-100 overflow-hidden">
+                                  <div className="h-full bg-yellow-400" style={{ width: `${pct}%` }} />
+                                </div>
+                                <div className="w-8 text-right text-sm text-gray-600">{count}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Add Review Form (revealed) */}
+                    {showReviewForm && (
+                      <form onSubmit={handleSubmitReview} className="mt-6 rounded-xl border border-gray-200 bg-white p-6">
+                        <div className="flex flex-col gap-3">
+                          <label className="text-sm font-medium text-gray-700">Your rating</label>
+                          <select
+                            value={newReviewRating}
+                            onChange={(e) => setNewReviewRating(e.target.value)}
+                            className="w-28 rounded-md border-gray-200"
+                          >
+                            <option value={5}>5 - Excellent</option>
+                            <option value={4}>4 - Good</option>
+                            <option value={3}>3 - Okay</option>
+                            <option value={2}>2 - Poor</option>
+                            <option value={1}>1 - Terrible</option>
+                          </select>
+
+                          <label className="text-sm font-medium text-gray-700">Your review</label>
+                          <textarea
+                            value={newReviewText}
+                            onChange={(e) => setNewReviewText(e.target.value)}
+                            rows={4}
+                            className="w-full rounded-md border-gray-200 p-3 text-sm text-gray-800"
+                            placeholder="Share your experience with this product"
+                            required
+                          />
+
+                          <div className="flex gap-3 mt-2">
+                            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-md">Submit</button>
+                            <button type="button" onClick={handleCancelReview} className="px-4 py-2 rounded-md border border-gray-200">Cancel</button>
+                          </div>
+                        </div>
+                      </form>
+                    )}
+
+                    {/* Reviews List */}
+                    <div className="mt-6 space-y-4">
+                      {reviews.length > 0 ? (
+                        reviews.map((r) => (
+                          <div key={r.id} className="rounded-lg border border-gray-200 p-4 bg-white">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-semibold text-gray-900">{r.name}</div>
+                                <div className="text-sm text-gray-500">{r.time}</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-yellow-400 font-semibold">{Array.from({ length: r.rating }).map((_, idx) => '★')}</div>
+                                <div className="text-sm text-gray-600">{r.rating}</div>
+                              </div>
+                            </div>
+                            <p className="mt-3 text-gray-700 text-sm">{r.text}</p>
+                            {Array.isArray(r.tags) && r.tags.length > 0 && (
+                              <div className="mt-3 flex gap-2 flex-wrap">
+                                {r.tags.map((t) => (
+                                  <span key={t} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-100">{t}</span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="mt-3 text-sm text-gray-500">Helpful ({r.helpful})</div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-600">No reviews yet. Be the first to add one.</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

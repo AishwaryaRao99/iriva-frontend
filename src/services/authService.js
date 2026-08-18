@@ -24,7 +24,11 @@ const handleResponse = async (response) => {
 
   if (!response.ok) {
     const message = body?.message || body?.error || body || response.statusText;
-    throw new Error(message || `Request failed with status ${response.status}`);
+    const err = new Error(message || `Request failed with status ${response.status}`);
+    // Attach parsed body and status for richer client-side handling
+    err.status = response.status;
+    err.body = body;
+    throw err;
   }
 
   return body;

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "../components/NavBar";
+import Saved from "./Saved";
+import Profile from "./Profile";
 import Hero from "../components/TopSection";
 import CategorySection from "../components/CategorySection";
 import ProductSection from "../components/ProductSection";
@@ -19,6 +21,7 @@ import {
 import { formatError } from "../utils/errorUtils";
 
 export default function Home({ onLogout }) {
+  const [activeTab, setActiveTab] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchTitle, setSearchTitle] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -257,7 +260,140 @@ export default function Home({ onLogout }) {
     setDetailsError("");
     setDetailsLoading(false);
     sessionStorage.removeItem(STORAGE_KEY);
+    setActiveTab('home');
   };
+
+  const handleOpenSaved = () => {
+    setActiveTab('saved');
+  };
+
+  const handleOpenProfile = () => {
+    setActiveTab('profile');
+  };
+
+  // Compute main content to avoid deep nested JSX/ternaries
+  let mainContent = null;
+
+  if (selectedProduct) {
+    mainContent = (
+      <ProductDetails
+        product={selectedProduct}
+        onClose={handleCloseProductDetails}
+        backLabel={searchTitle ? "Back to results" : "Back to Home"}
+      />
+    );
+  } else if (activeTab === 'saved') {
+    mainContent = <Saved products={allProducts.slice(0, 6)} onViewDetails={handleProductSelect} />;
+  } else if (activeTab === 'profile') {
+    mainContent = <Profile />;
+  } else {
+    mainContent = (
+      <div className="product-page-padding">
+        {showHomeHero && !searchTitle && (
+          <Hero
+            title="Know what's inside your products"
+            subtitle="Discover transparency scores and ingredient breakdowns"
+            onSearch={handleSearchResults}
+            clearSearchSignal={searchClearSignal}
+          />
+        )}
+
+        {searchTitle && (
+          <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 bg-white border-b border-gray-200">
+            <button
+              type="button"
+              onClick={handleResetHome}
+              className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold text-base sm:text-lg focus:outline-none"
+            >
+              <span className="text-xl">←</span>
+              Back to Home
+            </button>
+          </div>
+        )}
+
+        {homeError && !searchTitle && backendAvailable && (
+          <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
+            <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
+              <p className="text-lg font-semibold">Unable to load home content</p>
+              <p className="mt-3">{homeError?.message || String(homeError)}</p>
+            </div>
+          </section>
+        )}
+
+        {searchTitle ? (
+          <SearchResults
+            title={searchTitle}
+            results={searchResults}
+            loading={searchLoading || homeLoading}
+            error={searchError}
+            onProductInteraction={clearSearchInput}
+            onViewDetails={handleProductSelect}
+          />
+        ) : homeLoading ? (
+          <section className="min-h-[70vh] flex items-center justify-center bg-white">
+            <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
+            </div>
+          </section>
+        ) : detailsLoading ? (
+          <section className="min-h-[70vh] flex items-center justify-center bg-white">
+            <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
+            </div>
+          </section>
+        ) : detailsError ? (
+          <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
+            <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
+              <p className="text-lg font-semibold">Unable to load product details</p>
+              <p className="mt-3">{detailsError?.message || String(detailsError)}</p>
+            </div>
+          </section>
+        ) : !searchTitle && !backendAvailable ? (
+          <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-16">
+            <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-700 shadow-sm">
+              <h2 className="text-2xl font-semibold mb-4">Iriva is temporarily offline</h2>
+              <p className="text-base text-gray-600">
+                Unable to connect to the server. Please check your internet connection or try again later. If the issue persists, contact <a href="mailto:aishwaryarao669@gmail.com" className="text-green-600 hover:underline">here</a>.
+              </p>
+            </div>
+          </section>
+        ) : !searchTitle ? (
+          <>
+            <CategorySection
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategorySelect={handleCategorySelect}
+            />
+
+            <ProductSection
+              title="Trending Products"
+              products={trendingProducts}
+              onViewAll={handleAllProductsLoaded}
+              onProductInteraction={clearSearchInput}
+              onViewDetails={handleProductSelect}
+            />
+
+            <ProductSection
+              title="Recently Reviewed"
+              products={recentProducts}
+              onViewAll={handleAllProductsLoaded}
+              onProductInteraction={clearSearchInput}
+              onViewDetails={handleProductSelect}
+            />
+          </>
+        ) : (
+          <SearchResults
+            title={searchTitle}
+            results={searchResults}
+            loading={searchLoading}
+            error={searchError}
+            onProductInteraction={clearSearchInput}
+            onViewDetails={handleProductSelect}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -268,112 +404,10 @@ export default function Home({ onLogout }) {
         isProductDetails={!!selectedProduct}
         onSearch={backendAvailable ? handleSearchResults : undefined}
         onLogout={onLogout}
+        onSaved={handleOpenSaved}
+        onProfile={handleOpenProfile}
       />
-      <main className="flex-grow p-2">
-      {!selectedProduct ? (
-        <div className="product-page-padding">
-          {showHomeHero && (
-            <Hero
-              title="Know what's inside your products"
-              subtitle="Discover transparency scores and ingredient breakdowns"
-              onSearch={handleSearchResults}
-              clearSearchSignal={searchClearSignal}
-            />
-          )}
-
-          {searchTitle && (
-        <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 bg-white border-b border-gray-200">
-          <button
-            type="button"
-            onClick={handleResetHome}
-            className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold text-base sm:text-lg focus:outline-none"
-          >
-            <span className="text-xl">←</span>
-            Back to Home
-          </button>
-        </div>
-      )}
-
-      {homeError && !searchTitle && backendAvailable && (
-        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
-            <p className="text-lg font-semibold">Unable to load home content</p>
-            <p className="mt-3">{homeError?.message || String(homeError)}</p>
-          </div>
-        </section>
-      )}
-
-      {homeLoading ? (
-        <section className="min-h-[70vh] flex items-center justify-center bg-white">
-          <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
-          </div>
-        </section>
-      ) : detailsLoading ? (
-        <section className="min-h-[70vh] flex items-center justify-center bg-white">
-          <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
-          </div>
-        </section>
-      ) : detailsError ? (
-        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
-            <p className="text-lg font-semibold">Unable to load product details</p>
-              <p className="mt-3">{detailsError?.message || String(detailsError)}</p>
-          </div>
-        </section>
-      ) : !searchTitle && !backendAvailable ? (
-        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-16">
-          <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-700 shadow-sm">
-            <h2 className="text-2xl font-semibold mb-4">Iriva is temporarily offline</h2>
-            <p className="text-base text-gray-600">
-              Unable to connect to the server. Please check your internet connection or try again later. If the issue persists, contact <a href="mailto:aishwaryarao669@gmail.com" className="text-green-600 hover:underline">here</a>.
-            </p>
-          </div>
-        </section>
-      ) : !searchTitle ? (
-        <>
-          <CategorySection
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onCategorySelect={handleCategorySelect}
-          />
-
-          <ProductSection
-            title="Trending Products"
-            products={trendingProducts}
-            onViewAll={handleAllProductsLoaded}
-            onProductInteraction={clearSearchInput}
-            onViewDetails={handleProductSelect}
-          />
-
-          <ProductSection
-            title="Recently Reviewed"
-            products={recentProducts}
-            onViewAll={handleAllProductsLoaded}
-            onProductInteraction={clearSearchInput}
-            onViewDetails={handleProductSelect}
-          />
-        </>
-      ) : (
-        <SearchResults
-          title={searchTitle}
-          results={searchResults}
-          loading={searchLoading}
-          error={searchError}
-          onProductInteraction={clearSearchInput}
-          onViewDetails={handleProductSelect}
-        />
-      )}
-        </div>
-      ) : (
-        <ProductDetails
-          product={selectedProduct}
-          onClose={handleCloseProductDetails}
-          backLabel={searchTitle ? "Back to results" : "Back to Home"}
-        />
-      )}
-      </main>
+      <main className="grow p-2">{mainContent}</main>
 
       <Footer />
     </div>

@@ -9,7 +9,7 @@ import { useState, useCallback } from "react";
  * - isProductDetails (boolean) - hide Home/Categories when viewing product details
  * - onSearch (function) - callback when search is performed
  */
-export default function Navbar({ onHome, categories = [], onCategorySelect, isProductDetails = false, onSearch, onLogout }) {
+export default function Navbar({ onHome, categories = [], onCategorySelect, isProductDetails = false, onSearch, onLogout, onSaved, onProfile }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,7 +49,7 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
       </button>
 
       <div className="flex gap-4 sm:gap-6 text-gray-700 items-center flex-1 justify-center lg:justify-start ml-6">
-        {/* Always show Home and Categories so they're available on product pages too */}
+        {/* Always show Home, Categories, Saved and Profile so they're available on product pages too */}
         <>
           <button
             type="button"
@@ -57,6 +57,22 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
             className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
           >
             Home
+          </button>
+
+          <button
+            type="button"
+            onClick={onSaved}
+            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
+          >
+            Saved
+          </button>
+
+          <button
+            type="button"
+            onClick={onProfile}
+            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
+          >
+            Profile
           </button>
 
           {categories.length > 0 && (
