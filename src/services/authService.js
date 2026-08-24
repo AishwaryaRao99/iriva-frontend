@@ -59,7 +59,7 @@ export const login = async (email, password) => {
   });
 };
 
-export const register = async ({ username, email, password, confirmPassword }) => {
+export const register = async ({ username, displayName, email, password, confirmPassword }) => {
   validateAuthInputs(email, password);
 
   return sendRequest("register", {
@@ -67,6 +67,7 @@ export const register = async ({ username, email, password, confirmPassword }) =
     method: "POST",
     body: JSON.stringify({
       username,
+      displayName,
       email,
       password,
       confirmPassword,

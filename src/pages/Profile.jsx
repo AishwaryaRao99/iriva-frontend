@@ -1,49 +1,43 @@
+import { useEffect, useState } from "react";
+import { getProfile } from "../services/profileService";
+import { formatError } from "../utils/errorUtils";
+
 export default function Profile({ onLogout }) {
-  // Placeholder data — replace with real user+reviews when backend is available
-  const user = {
-    name: "Sarah Mitchell",
-    email: "sarah.mitchell@email.com",
-    memberSince: "March 2025",
-    initials: "SM",
-  };
+  const [user, setUser] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [activity, setActivity] = useState({ reviews: 0, saved: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const activity = {
-    reviews: 12,
-    saved: 24,
-  };
+  useEffect(() => {
+    let isCurrent = true;
 
-  const reviews = [
-    {
-      id: 1,
-      title: "Organic Face Serum",
-      brand: "Pure Botanics",
-      rating: 5,
-      time: "2 weeks ago",
-      text: "Love how transparent this brand is about their ingredients. Finally found a serum that works!",
-      tags: ["Effective", "Gentle"],
-      image: "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?w=400&q=60",
-    },
-    {
-      id: 2,
-      title: "Eco Dish Soap",
-      brand: "EcoClean",
-      rating: 5,
-      time: "3 weeks ago",
-      text: "Amazing product! Cleans well and I love that it's completely transparent about ingredients.",
-      tags: ["Eco-Friendly", "Works Well"],
-      image: "https://images.unsplash.com/photo-1503602642458-232111445657?w=400&q=60",
-    },
-    {
-      id: 3,
-      title: "Natural Moisturizer",
-      brand: "Green Beauty Co",
-      rating: 4,
-      time: "1 month ago",
-      text: "Great moisturizer but wish the packaging was more sustainable. Otherwise very happy with it.",
-      tags: ["Hydrating", "Good Value"],
-      image: "https://images.unsplash.com/photo-1549194389-1a1b23f6e0f1?w=400&q=60",
-    },
-  ];
+    const loadProfile = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const profileData = await getProfile();
+
+        if (!isCurrent) return;
+        setUser(profileData?.user || {});
+        setActivity(profileData?.activity || { reviews: 0, saved: 0 });
+        setReviews(Array.isArray(profileData?.reviews) ? profileData.reviews : []);
+      } catch (loadError) {
+        if (isCurrent) setError(formatError(loadError));
+      } finally {
+        if (isCurrent) setLoading(false);
+      }
+    };
+
+    loadProfile();
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  const profileName = user?.displayName || user?.name || user?.username || "";
+  const initials = user?.initials || profileName.split(" ").map((part) => part[0]).join("").slice(0, 2) || "";
 
   const renderStars = (n) => {
     const stars = [];
@@ -57,6 +51,21 @@ export default function Profile({ onLogout }) {
     return <div className="flex items-center gap-1">{stars}</div>;
   };
 
+  if (loading) {
+    return <section className="px-8 py-10 text-center text-gray-600">Loading your profile...</section>;
+  }
+
+  if (error) {
+    return (
+      <section className="px-8 py-10">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-700">
+          <p className="font-semibold">Unable to load your profile</p>
+          <p className="mt-2 text-sm">{error.message}</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="px-8 py-10">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8">
@@ -65,11 +74,11 @@ export default function Profile({ onLogout }) {
           <div className="rounded-2xl border bg-white p-6 shadow-sm">
             <div className="flex flex-col items-center text-center">
               <div className="h-20 w-20 rounded-full bg-linear-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-lg font-bold mb-4">
-                {user.initials}
+                {initials}
               </div>
-              <h2 className="text-lg font-semibold">{user.name}</h2>
-              <p className="text-sm text-gray-500 mt-1">{user.email}</p>
-              <p className="text-xs text-gray-400 mt-1">Member since {user.memberSince}</p>
+              <h2 className="text-lg font-semibold">{profileName}</h2>
+              <p className="text-sm text-gray-500 mt-1">{user.email || ""}</p>
+              <p className="text-xs text-gray-400 mt-1">Member since {user.memberSince || ""}</p>
               <button className="mt-4 inline-flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 010 2.828l-8.486 8.486a2 2 0 01-.708.414l-4 1a1 1 0 01-1.213-1.213l1-4a2 2 0 01.414-.708L14.586 2.586a2 2 0 012.828 0z"/></svg>
                 Edit Profile
@@ -105,24 +114,24 @@ export default function Profile({ onLogout }) {
             <div className="space-y-6">
               {reviews.map((r) => (
                 <div key={r.id} className="flex gap-4 items-start">
-                  <img src={r.image} alt="" className="h-16 w-16 rounded-md object-cover" />
+                  <img src={r.imageUrl || r.image || "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&q=60"} alt="" className="h-16 w-16 rounded-md object-cover" />
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-semibold">{r.title}</h4>
-                        <p className="text-xs text-gray-500">{r.brand}</p>
+                        <h4 className="font-semibold">{r.title || r.productName || "Product review"}</h4>
+                        <p className="text-xs text-gray-500">{r.brand || r.company || ""}</p>
                       </div>
-                      <div className="text-right text-xs text-gray-400">{r.time}</div>
+                      <div className="text-right text-xs text-gray-400">{r.time || ""}</div>
                     </div>
 
                     <div className="mt-2 flex items-center gap-3">
                       {renderStars(r.rating)}
                     </div>
 
-                    <p className="text-sm text-gray-700 mt-3">{r.text}</p>
+                    <p className="text-sm text-gray-700 mt-3">{r.text || ""}</p>
 
                     <div className="mt-3 flex gap-2">
-                      {r.tags.map((t) => (
+                      {(Array.isArray(r.tags) ? r.tags : []).map((t) => (
                         <span key={t} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full">{t}</span>
                       ))}
                     </div>

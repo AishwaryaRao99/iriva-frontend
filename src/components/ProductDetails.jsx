@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getProductReviews } from "../services/searchService";
+import { addReview, removeSavedProduct, saveProduct } from "../services/profileService";
 
 const statusStyles = {
   Safe: "border-green-200 bg-green-50 text-green-900",
@@ -49,30 +51,35 @@ export default function ProductDetails({ product, onClose, backLabel }) {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReviewText, setNewReviewText] = useState("");
   const [newReviewRating, setNewReviewRating] = useState(5);
-  const [reviews, setReviews] = useState(() =>
-    Array.isArray(product?.reviews)
-      ? product.reviews
-      : [
-          {
-            id: 1,
-            name: "Sarah M.",
-            rating: 5,
-            time: "2 weeks ago",
-            text: "Love how transparent this brand is about their ingredients. Finally found a serum that works!",
-            tags: ["Effective", "Gentle"],
-            helpful: 24,
-          },
-          {
-            id: 2,
-            name: "Mike T.",
-            rating: 4,
-            time: "1 month ago",
-            text: "Great product but wish it was completely paraben-free. Still better than most alternatives.",
-            tags: ["Good Value", "Works Well"],
-            helpful: 18,
-          },
-        ]
-  );
+  const [reviews, setReviews] = useState([]);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [isSaved, setIsSaved] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    const loadReviews = async () => {
+      if (!product?.id) {
+        setReviews([]);
+        return;
+      }
+
+      try {
+        const productReviews = await getProductReviews(product.id);
+        if (isCurrent) setReviews(productReviews);
+      } catch (error) {
+        if (isCurrent) setReviews([]);
+      }
+    };
+
+    loadReviews();
+    return () => {
+      isCurrent = false;
+    };
+  }, [product?.id]);
 
   const totalReviews = reviews.length;
   const averageRating = totalReviews > 0 ? (reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / totalReviews).toFixed(1) : "0.0";
@@ -82,23 +89,48 @@ export default function ProductDetails({ product, onClose, backLabel }) {
   const handleStartReview = () => setShowReviewForm(true);
   const handleCancelReview = () => {
     setShowReviewForm(false);
+    setReviewError("");
     setNewReviewRating(5);
     setNewReviewText("");
   };
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = async (e) => {
     e?.preventDefault?.();
-    const newReview = {
-      id: Date.now(),
-      name: "You",
-      rating: Number(newReviewRating) || 5,
-      time: "Just now",
-      text: newReviewText || "",
-      tags: [],
-      helpful: 0,
-    };
-    setReviews((prev) => [newReview, ...prev]);
-    handleCancelReview();
+    setReviewError("");
+    setReviewSubmitting(true);
+
+    try {
+      const createdReview = await addReview(product.id, {
+        rating: Number(newReviewRating),
+        text: newReviewText.trim(),
+      });
+      setReviews((prev) => [createdReview, ...prev]);
+      handleCancelReview();
+    } catch (error) {
+      setReviewError(error.message || "Unable to submit your review.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const handleSaveProduct = async () => {
+    if (!product?.id || saveLoading) return;
+
+    setSaveError("");
+    setSaveLoading(true);
+    try {
+      if (isSaved) {
+        await removeSavedProduct(product.id);
+        setIsSaved(false);
+      } else {
+        await saveProduct(product.id);
+        setIsSaved(true);
+      }
+    } catch (error) {
+      setSaveError(error.message || "Unable to update saved products.");
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   const scorePercent = formatScore(product?.transparencyScore ?? product?.transparency ?? 0);
@@ -245,17 +277,17 @@ export default function ProductDetails({ product, onClose, backLabel }) {
             <div className="flex gap-3 items-stretch">
               <button
                 type="button"
-                disabled
-                title="Coming in future update"
-                className="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed opacity-70 focus:outline-none transition"
+                onClick={handleSaveProduct}
+                disabled={saveLoading}
+                className="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg focus:outline-none transition hover:bg-green-700 disabled:opacity-70"
               >
-                Save to Profile
+                {saveLoading ? "Saving..." : isSaved ? "Remove from Profile" : "Save to Profile"}
               </button>
               <button
                 type="button"
-                disabled
-                title="Coming in future update"
-                className="flex-shrink-0 p-3 text-gray-400 cursor-not-allowed opacity-70 focus:outline-none transition border border-gray-200 rounded-lg"
+                onClick={handleSaveProduct}
+                disabled={saveLoading}
+                className={`flex-shrink-0 p-3 text-gray-400 focus:outline-none transition border border-gray-200 rounded-lg disabled:opacity-70 ${isSaved ? "text-green-600" : "hover:text-green-600"}`}
                 aria-label="Add to favorites"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
@@ -263,6 +295,7 @@ export default function ProductDetails({ product, onClose, backLabel }) {
                 </svg>
               </button>
             </div>
+            {saveError && <p className="mt-2 text-sm text-red-600">{saveError}</p>}
           </aside>
         </div>
 
@@ -461,9 +494,12 @@ export default function ProductDetails({ product, onClose, backLabel }) {
                           />
 
                           <div className="flex gap-3 mt-2">
-                            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-md">Submit</button>
+                            <button type="submit" disabled={reviewSubmitting} className="bg-green-600 text-white px-4 py-2 rounded-md disabled:opacity-70">
+                              {reviewSubmitting ? "Submitting..." : "Submit"}
+                            </button>
                             <button type="button" onClick={handleCancelReview} className="px-4 py-2 rounded-md border border-gray-200">Cancel</button>
                           </div>
+                          {reviewError && <p className="text-sm text-red-600">{reviewError}</p>}
                         </div>
                       </form>
                     )}

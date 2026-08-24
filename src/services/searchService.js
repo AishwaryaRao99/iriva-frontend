@@ -221,6 +221,18 @@ export const getProductById = async (productId) => {
   });
 };
 
+export const getProductReviews = async (productId) => {
+  if (!productId || `${productId}`.trim() === "") {
+    throw new Error("Product id is required to fetch product reviews.");
+  }
+
+  const response = await fetchJson(`${API_BASE_URL}/${encodeURIComponent(productId)}/reviews`, {
+    method: "GET",
+  });
+
+  return Array.isArray(response) ? response : [];
+};
+
 export default {
   searchProducts,
   searchProductsByBrand,
@@ -228,4 +240,5 @@ export default {
   getProductsByCategory,
   getCategories,
   getProductById,
+  getProductReviews,
 };

@@ -1,11 +1,17 @@
 import ProductCard from "../components/ProductCard";
 
-export default function Saved({ products = [], onViewDetails }) {
+export default function Saved({ products = [], loading = false, error = "", onViewDetails }) {
   return (
     <section className="px-8 py-8">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Saved Products</h1>
-        <p className="text-sm text-gray-600 mb-6">{(products?.length ?? 0)} products saved</p>
+        {loading ? (
+          <p className="text-sm text-gray-600 mb-6">Loading saved products...</p>
+        ) : error ? (
+          <p className="text-sm text-red-600 mb-6">{error.message || error}</p>
+        ) : (
+          <p className="text-sm text-gray-600 mb-6">{(products?.length ?? 0)} products saved</p>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {products.map((p) => (

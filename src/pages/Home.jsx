@@ -19,6 +19,7 @@ import {
   getCategories,
 } from "../services/searchService";
 import { formatError } from "../utils/errorUtils";
+import { getSavedProducts } from "../services/profileService";
 
 export default function Home({ onLogout }) {
   const [activeTab, setActiveTab] = useState('home');
@@ -38,6 +39,9 @@ export default function Home({ onLogout }) {
   const [detailsError, setDetailsError] = useState("");
   const [homeError, setHomeError] = useState("");
   const [homeLoading, setHomeLoading] = useState(true);
+  const [savedProducts, setSavedProducts] = useState([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savedError, setSavedError] = useState("");
 
   const STORAGE_KEY = "iriva-frontend-state";
 
@@ -263,8 +267,20 @@ export default function Home({ onLogout }) {
     setActiveTab('home');
   };
 
-  const handleOpenSaved = () => {
+  const handleOpenSaved = async () => {
     setActiveTab('saved');
+    setSavedLoading(true);
+    setSavedError("");
+
+    try {
+      const products = await getSavedProducts();
+      setSavedProducts(Array.isArray(products) ? products : []);
+    } catch (error) {
+      setSavedError(formatError(error));
+      setSavedProducts([]);
+    } finally {
+      setSavedLoading(false);
+    }
   };
 
   const handleOpenProfile = () => {
@@ -283,9 +299,16 @@ export default function Home({ onLogout }) {
       />
     );
   } else if (activeTab === 'saved') {
-    mainContent = <Saved products={allProducts.slice(0, 6)} onViewDetails={handleProductSelect} />;
+    mainContent = (
+      <Saved
+        products={savedProducts}
+        loading={savedLoading}
+        error={savedError}
+        onViewDetails={handleProductSelect}
+      />
+    );
   } else if (activeTab === 'profile') {
-    mainContent = <Profile />;
+    mainContent = <Profile onLogout={onLogout} />;
   } else {
     mainContent = (
       <div className="product-page-padding">

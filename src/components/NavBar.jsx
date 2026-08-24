@@ -59,22 +59,6 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
             Home
           </button>
 
-          <button
-            type="button"
-            onClick={onSaved}
-            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
-          >
-            Saved
-          </button>
-
-          <button
-            type="button"
-            onClick={onProfile}
-            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
-          >
-            Profile
-          </button>
-
           {categories.length > 0 && (
             <div className="relative hidden sm:block">
               <button
@@ -107,6 +91,21 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
               )}
             </div>
           )}
+          <button
+            type="button"
+            onClick={onSaved}
+            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
+          >
+            Saved
+          </button>
+
+          <button
+            type="button"
+            onClick={onProfile}
+            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
+          >
+            Profile
+          </button>
         </>
       </div>
 

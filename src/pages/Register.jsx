@@ -6,7 +6,8 @@ import PRIVACY_TEXT from "../content/privacy.md?raw";
 import UI_CONFIG from "../config/uiConfig";
 
 export default function Register({ onBackToLogin }) {
-  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,7 +42,8 @@ export default function Register({ onBackToLogin }) {
 
     try {
       await register({
-        username: fullName.trim(),
+        username: username.trim(),
+        displayName: displayName.trim(),
         email: email.trim(),
         password,
         confirmPassword,
@@ -117,16 +119,29 @@ export default function Register({ onBackToLogin }) {
 
           <form onSubmit={handleRegister} className="mt-6 space-y-5">
             <label className="block">
+              <span className="text-sm font-medium text-slate-700">User Name</span>
+              <input
+                type="text"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
+                placeholder="jane.smith"
+                autoComplete="username"
+              />
+              {fieldErrors?.username && <p className="text-sm text-red-600 mt-2">{fieldErrors.username}</p>}
+            </label>
+
+            <label className="block">
               <span className="text-sm font-medium text-slate-700">Full Name</span>
               <input
                 type="text"
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none"
                 placeholder="Jane Smith"
                 autoComplete="name"
               />
-              {fieldErrors?.username && <p className="text-sm text-red-600 mt-2">{fieldErrors.username}</p>}
+              {fieldErrors?.displayName && <p className="text-sm text-red-600 mt-2">{fieldErrors.displayName}</p>}
             </label>
 
             <label className="block">
