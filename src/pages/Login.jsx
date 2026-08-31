@@ -10,6 +10,7 @@ export default function Login({ onLoginSuccess }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [modalType, setModalType] = useState('info');
@@ -17,10 +18,17 @@ export default function Login({ onLoginSuccess }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    const nextFieldErrors = {};
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) nextFieldErrors.email = "Email is required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) nextFieldErrors.email = "Enter a valid email address.";
+    if (!password) nextFieldErrors.password = "Password is required.";
+    setFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) return;
     setLoading(true);
 
     try {
-      const res = await login(email.trim(), password);
+      await login(trimmedEmail, password);
       // On successful login proceed immediately without showing a modal
       setModalOpen(false);
       onLoginSuccess();
@@ -42,7 +50,7 @@ export default function Login({ onLoginSuccess }) {
 
   return (
     <div className="min-h-screen bg-repeat-round bg-[url(https://images.unsplash.com/photo-1558741072-b7db02d64308?w=1920&q=80)] px-4 py-10">
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/70 via-emerald-800/60 to-blue-900/70 flex items-center justify-center">
+      <div className="absolute inset-0 bg-linear-to-br from-emerald-900/70 via-emerald-800/60 to-blue-900/70 flex items-center justify-center">
         <div className="w-full max-w-md bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl overflow-hidden">
           <div className="px-10 py-8 text-center bg-white/90">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-green-600 text-white mx-auto mb-5">
@@ -54,7 +62,7 @@ export default function Login({ onLoginSuccess }) {
             <h1 className="text-3xl font-semibold text-slate-900 mb-1">Iriva</h1>
             <p className="text-sm text-slate-500 mb-8">Sign in to your account to continue</p>
 
-            <form onSubmit={handleSubmit} className="space-y-5 text-left">
+            <form onSubmit={handleSubmit} noValidate className="space-y-5 text-left">
               <label className="block">
                 <span className="text-sm font-medium text-slate-700">Email</span>
                 <input
@@ -65,6 +73,7 @@ export default function Login({ onLoginSuccess }) {
                   placeholder="you@example.com"
                   autoComplete="username"
                 />
+                {fieldErrors.email && <p className="mt-2 text-sm text-red-600">{fieldErrors.email}</p>}
               </label>
 
               <label className="block">
@@ -77,6 +86,7 @@ export default function Login({ onLoginSuccess }) {
                   placeholder="••••••••"
                   autoComplete="current-password"
                 />
+                {fieldErrors.password && <p className="mt-2 text-sm text-red-600">{fieldErrors.password}</p>}
               </label>
 
               

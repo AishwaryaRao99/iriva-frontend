@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 /**
  * Navbar Component
@@ -14,6 +14,18 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
+  const categoriesRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (categoriesRef.current && !categoriesRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
 
   const handleSearchClick = useCallback(async () => {
     if (!searchQuery.trim() || !onSearch) return;
@@ -60,7 +72,7 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
           </button>
 
           {categories.length > 0 && (
-            <div className="relative hidden sm:block">
+            <div ref={categoriesRef} className="relative hidden sm:block">
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen((open) => !open)}
@@ -140,10 +152,16 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
       <div className="relative ml-4">
         <button
           type="button"
-          onClick={() => setIsProfileMenuOpen((open) => !open)}
-          className={`p-2 rounded-full focus:outline-none transition ${onLogout ? "text-green-700 hover:bg-green-50" : "text-gray-400 cursor-not-allowed"}`}
+          onClick={() => {
+            if (!onLogout) {
+              onProfile?.();
+              return;
+            }
+            setIsProfileMenuOpen((open) => !open);
+          }}
+          className={`p-2 rounded-full focus:outline-none transition ${onLogout ? "text-green-700 hover:bg-green-50" : "text-gray-500 hover:bg-green-50 hover:text-green-700"}`}
           aria-label="Profile"
-          title={onLogout ? "Open profile menu" : "Profile actions unavailable"}
+          title={onLogout ? "Open profile menu" : "Sign in to open your profile"}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />

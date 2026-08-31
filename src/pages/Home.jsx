@@ -1,6 +1,6 @@
 // src/pages/Home.jsx
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Navbar from "../components/NavBar";
 import Saved from "./Saved";
 import Profile from "./Profile";
@@ -11,6 +11,7 @@ import ProductCard from "../components/ProductCard";
 import ProductDetails from "../components/ProductDetails";
 import SearchResults from "../components/SearchResults";
 import Footer from "../components/Footer";
+import CustomAlertModal from "../components/CustomAlertModal";
 import {
   getProductsByCategory,
   getProductById,
@@ -21,7 +22,7 @@ import {
 import { formatError } from "../utils/errorUtils";
 import { getSavedProducts } from "../services/profileService";
 
-export default function Home({ onLogout }) {
+export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchTitle, setSearchTitle] = useState("");
@@ -42,6 +43,8 @@ export default function Home({ onLogout }) {
   const [savedProducts, setSavedProducts] = useState([]);
   const [savedLoading, setSavedLoading] = useState(false);
   const [savedError, setSavedError] = useState("");
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const hasMountedPersistence = useRef(false);
 
   const STORAGE_KEY = "iriva-frontend-state";
 
@@ -65,6 +68,7 @@ export default function Home({ onLogout }) {
       const parsed = JSON.parse(persisted);
 
       if (parsed?.selectedProduct) setSelectedProduct(parsed.selectedProduct);
+      if (parsed?.activeTab) setActiveTab(parsed.activeTab);
       if (parsed?.searchTitle) setSearchTitle(parsed.searchTitle);
       if (parsed?.selectedCategory) setSelectedCategory(parsed.selectedCategory);
       if (Array.isArray(parsed?.searchResults)) setSearchResults(parsed.searchResults);
@@ -97,9 +101,15 @@ export default function Home({ onLogout }) {
   }, [selectedCategory]);
 
   useEffect(() => {
+    if (!hasMountedPersistence.current) {
+      hasMountedPersistence.current = true;
+      return;
+    }
+
     try {
       const payload = {
         selectedProduct,
+        activeTab,
         searchTitle,
         selectedCategory,
         searchResults,
@@ -110,7 +120,7 @@ export default function Home({ onLogout }) {
     } catch (error) {
       console.warn("Unable to persist state:", error);
     }
-  }, [selectedProduct, searchTitle, selectedCategory, searchResults, allProducts, hasLoadedAllProducts]);
+  }, [selectedProduct, activeTab, searchTitle, selectedCategory, searchResults, allProducts, hasLoadedAllProducts]);
 
   const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
@@ -198,11 +208,14 @@ export default function Home({ onLogout }) {
 
   const handleCloseProductDetails = () => {
     setSelectedProduct(null);
+    setActiveTab('home');
     setDetailsError("");
     setDetailsLoading(false);
   };
 
   const handleCategorySelect = async (category) => {
+    setSelectedProduct(null);
+    setActiveTab('home');
     clearSearchInput();
     setSelectedCategory(category);
     setSearchTitle(`${category} Products`);
@@ -268,6 +281,12 @@ export default function Home({ onLogout }) {
   };
 
   const handleOpenSaved = async () => {
+    if (!isAuthenticated) {
+      handleRequireAuthentication();
+      return;
+    }
+    setSelectedProduct(null);
+    setDetailsError("");
     setActiveTab('saved');
     setSavedLoading(true);
     setSavedError("");
@@ -284,7 +303,17 @@ export default function Home({ onLogout }) {
   };
 
   const handleOpenProfile = () => {
+    if (!isAuthenticated) {
+      handleRequireAuthentication();
+      return;
+    }
+    setSelectedProduct(null);
+    setDetailsError("");
     setActiveTab('profile');
+  };
+
+  const handleRequireAuthentication = () => {
+    setAuthModalOpen(true);
   };
 
   // Compute main content to avoid deep nested JSX/ternaries
@@ -296,6 +325,8 @@ export default function Home({ onLogout }) {
         product={selectedProduct}
         onClose={handleCloseProductDetails}
         backLabel={searchTitle ? "Back to results" : "Back to Home"}
+        isAuthenticated={isAuthenticated}
+        onRequireAuthentication={handleRequireAuthentication}
       />
     );
   } else if (activeTab === 'saved') {
@@ -433,6 +464,17 @@ export default function Home({ onLogout }) {
       <main className="grow p-2">{mainContent}</main>
 
       <Footer />
+      <CustomAlertModal
+        open={authModalOpen}
+        title="Sign in required"
+        message="Please sign in to access saved products, your profile, or product actions."
+        actionLabel="Sign in"
+        onAction={() => {
+          setAuthModalOpen(false);
+          onSignIn?.();
+        }}
+        onClose={() => setAuthModalOpen(false)}
+      />
     </div>
   );
 }

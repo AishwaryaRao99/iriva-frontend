@@ -28,6 +28,7 @@ export default function Saved({ products = [], loading = false, error = "", onVi
                 id={p.id}
                 productName={p.productName || p.name}
                 description={p.description}
+                descriptionMaxLength={120}
                 imageUrl={p.imageUrl || p.image}
                 transparencyScore={p.transparencyScore ?? p.transparency}
                 onViewDetails={onViewDetails}

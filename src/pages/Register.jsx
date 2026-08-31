@@ -28,13 +28,23 @@ export default function Register({ onBackToLogin }) {
     setSuccess("");
     setFieldErrors({});
 
-    if (!acceptedTerms) {
-      setError("Please agree to the Terms of Service and Privacy Policy.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    const nextFieldErrors = {};
+    const trimmedUsername = username.trim();
+    const trimmedDisplayName = displayName.trim();
+    const trimmedEmail = email.trim();
+    if (!trimmedUsername) nextFieldErrors.username = "Username is required.";
+    if (!trimmedDisplayName) nextFieldErrors.displayName = "Full name is required.";
+    if (!trimmedEmail) nextFieldErrors.email = "Email is required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) nextFieldErrors.email = "Enter a valid email address.";
+    if (!password) nextFieldErrors.password = "Password is required.";
+    else if (password.length < 8) nextFieldErrors.password = "Password must be at least 8 characters.";
+    else if(!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/.test(password)) nextFieldErrors.password = 
+    "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&)";
+    if (!confirmPassword) nextFieldErrors.confirmPassword = "Please confirm your password.";
+    else if (password !== confirmPassword) nextFieldErrors.confirmPassword = "Passwords do not match.";
+    if (!acceptedTerms) nextFieldErrors.acceptedTerms = "Please agree to the Terms of Service and Privacy Policy.";
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
       return;
     }
 
@@ -42,9 +52,9 @@ export default function Register({ onBackToLogin }) {
 
     try {
       await register({
-        username: username.trim(),
-        displayName: displayName.trim(),
-        email: email.trim(),
+        username: trimmedUsername,
+        displayName: trimmedDisplayName,
+        email: trimmedEmail,
         password,
         confirmPassword,
       });
@@ -81,7 +91,7 @@ export default function Register({ onBackToLogin }) {
 
   return (
     <div className="min-h-screen bg-cover bg-center bg-[url(https://images.unsplash.com/photo-1558741072-b7db02d64308?w=1920&q=80)] px-4 py-10">
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/80 via-emerald-900/60 to-blue-900/80" />
+      <div className="absolute inset-0 bg-linear-to-br from-emerald-900/80 via-emerald-900/60 to-blue-900/80" />
       <div className="relative flex min-h-screen items-center justify-center">
         <div className="w-full max-w-lg rounded-3xl bg-white/95 p-8 shadow-2xl backdrop-blur-xl border border-white/70">
           <div className="text-center">
@@ -117,7 +127,7 @@ export default function Register({ onBackToLogin }) {
             </div>
           </div>
 
-          <form onSubmit={handleRegister} className="mt-6 space-y-5">
+          <form onSubmit={handleRegister} noValidate className="mt-6 space-y-5">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">User Name</span>
               <input
@@ -194,6 +204,7 @@ export default function Register({ onBackToLogin }) {
                 I agree to Iriva&apos;s <button type="button" onClick={() => setShowTerms(true)} className="font-semibold text-emerald-600 hover:text-emerald-700">Terms of Service</button> and{' '}
                 <button type="button" onClick={() => setShowPrivacy(true)} className="font-semibold text-emerald-600 hover:text-emerald-700">Privacy Policy</button>.
               </span>
+              {fieldErrors?.acceptedTerms && <p className="text-sm text-red-600">{fieldErrors.acceptedTerms}</p>}
             </label>
 
             {error && <p className="text-sm text-red-600">{error}</p>}

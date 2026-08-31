@@ -50,15 +50,10 @@ function App() {
     };
   }, []);
 
-  // Keep URL and authentication state synchronized
+  // Keep the login route available, while allowing guests to browse Home.
   useEffect(() => {
     if (authChecking) {
       return;
-    }
-
-    if (!isAuthenticated && currentPath !== "/login") {
-      window.history.replaceState({}, "", "/login");
-      setCurrentPath("/login");
     }
 
     if (isAuthenticated && currentPath === "/login") {
@@ -69,8 +64,6 @@ function App() {
 
   // Called after successful manual login
   const handleLoginSuccess = () => {
-    sessionStorage.removeItem(HOME_STATE_STORAGE_KEY);
-
     setIsAuthenticated(true);
 
     // Move from /login to /
@@ -94,16 +87,20 @@ function App() {
     setCurrentPath("/login");
   };
 
-  // Don't render Login/Home until authentication check is complete
-  if (authChecking) {
-    return <div>Loading...</div>;
-  }
-
-  if (!isAuthenticated) {
+  if (currentPath === "/login") {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  return <Home onLogout={handleLogout} />;
+  return (
+    <Home
+      onLogout={isAuthenticated ? handleLogout : undefined}
+      isAuthenticated={isAuthenticated}
+      onSignIn={() => {
+        window.history.pushState({}, "", "/login");
+        setCurrentPath("/login");
+      }}
+    />
+  );
 }
 
 export default App;

@@ -111,8 +111,13 @@ export default function Profile({ onLogout }) {
           <div className="rounded-2xl border bg-white p-6 shadow-sm">
             <h3 className="text-xl font-semibold mb-4">Your Reviews</h3>
 
-            <div className="space-y-6">
-              {reviews.map((r) => (
+            {reviews.length === 0 ? (
+              <p className="rounded-xl bg-gray-50 px-5 py-6 text-sm text-gray-600">
+                You have not added any reviews yet. Your product reviews will appear here.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {reviews.map((r) => (
                 <div key={r.id} className="flex gap-4 items-start">
                   <img src={r.imageUrl || r.image || "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&q=60"} alt="" className="h-16 w-16 rounded-md object-cover" />
                   <div className="flex-1">
@@ -137,8 +142,9 @@ export default function Profile({ onLogout }) {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

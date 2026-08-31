@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { marked } from 'marked';
 
-export default function CustomAlertModal({ open, title, message, type = 'info', onClose, autoCloseMs = 0, renderMarkdown = false }) {
+export default function CustomAlertModal({ open, title, message, type = 'info', onClose, autoCloseMs = 0, renderMarkdown = false, actionLabel, onAction }) {
   if (!open) return null;
 
   const colors = {
@@ -30,6 +30,15 @@ export default function CustomAlertModal({ open, title, message, type = 'info', 
           <p className="text-sm mb-4 whitespace-pre-wrap">{message}</p>
         )}
         <div className="text-right">
+          {actionLabel && onAction && (
+            <button
+              type="button"
+              onClick={onAction}
+              className="mr-2 inline-flex items-center justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+            >
+              {actionLabel}
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}

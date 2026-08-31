@@ -46,7 +46,7 @@ const formatScore = (score) => {
  * - onClose (function) - callback to close the details view
  * - backLabel (string) - label for the back button
  */
-export default function ProductDetails({ product, onClose, backLabel }) {
+export default function ProductDetails({ product, onClose, backLabel, isAuthenticated = true, onRequireAuthentication }) {
   const [activeTab, setActiveTab] = useState("ingredients");
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReviewText, setNewReviewText] = useState("");
@@ -86,7 +86,13 @@ export default function ProductDetails({ product, onClose, backLabel }) {
   const ratingCounts = [0, 0, 0, 0, 0, 0];
   reviews.forEach((r) => (ratingCounts[Number(r.rating) || 0] += 1));
 
-  const handleStartReview = () => setShowReviewForm(true);
+  const handleStartReview = () => {
+    if (!isAuthenticated) {
+      onRequireAuthentication?.();
+      return;
+    }
+    setShowReviewForm(true);
+  };
   const handleCancelReview = () => {
     setShowReviewForm(false);
     setReviewError("");
@@ -114,6 +120,10 @@ export default function ProductDetails({ product, onClose, backLabel }) {
   };
 
   const handleSaveProduct = async () => {
+    if (!isAuthenticated) {
+      onRequireAuthentication?.();
+      return;
+    }
     if (!product?.id || saveLoading) return;
 
     setSaveError("");
