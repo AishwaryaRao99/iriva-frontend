@@ -233,6 +233,21 @@ export const getProductReviews = async (productId) => {
   return Array.isArray(response) ? response : [];
 };
 
+export const getReviewTags = async (productId) => {
+  if (!productId || `${productId}`.trim() === "") {
+    throw new Error("Product id is required to fetch review tags.");
+  }
+
+  const response = await fetchJson(`${API_BASE_URL}/${encodeURIComponent(productId)}/review-tags`, {
+    method: "GET",
+  });
+
+  const tags = Array.isArray(response) ? response : response?.tags || response?.data || [];
+  return tags
+    .map((tag) => (typeof tag === "string" ? tag : tag?.name || tag?.label || tag?.tag))
+    .filter(Boolean);
+};
+
 export default {
   searchProducts,
   searchProductsByBrand,
@@ -241,4 +256,5 @@ export default {
   getCategories,
   getProductById,
   getProductReviews,
+  getReviewTags,
 };

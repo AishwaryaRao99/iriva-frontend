@@ -32,6 +32,8 @@ const request = async (endpoint = "", options = {}) => {
 export const getProfile = () => request();
 export const getReviews = () => request("/reviews");
 export const getSavedProducts = () => request("/saved-products");
+export const getSavedProductStatus = (productId) =>
+  request(`/saved-products/${encodeURIComponent(productId)}`);
 
 export const saveProduct = (productId) =>
   request(`/saved-products/${encodeURIComponent(productId)}`, { method: "POST" });
@@ -45,11 +47,23 @@ export const addReview = (productId, review) =>
     body: JSON.stringify(review),
   });
 
+export const updateReview = (reviewId, review) =>
+  request(`/reviews/${encodeURIComponent(reviewId)}`, {
+    method: "PUT",
+    body: JSON.stringify(review),
+  });
+
+export const deleteReview = (reviewId) =>
+  request(`/reviews/${encodeURIComponent(reviewId)}`, { method: "DELETE" });
+
 export default {
   getProfile,
   getReviews,
   getSavedProducts,
+  getSavedProductStatus,
   saveProduct,
   removeSavedProduct,
   addReview,
+  updateReview,
+  deleteReview,
 };

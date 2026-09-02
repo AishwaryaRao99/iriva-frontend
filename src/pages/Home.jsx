@@ -54,12 +54,14 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
   };
 
   const isBackendUnavailable = (messageOrObj) => {
+    if (messageOrObj?.connectivity === true) return true;
     const raw = typeof messageOrObj === "string" ? messageOrObj : messageOrObj?.raw || messageOrObj?.message || "";
-    return /(Cannot connect to backend|Request timed out|Failed to fetch|NetworkError)/i.test(raw);
+    return /(Cannot connect to (backend|server)|Request timed out|Failed to fetch|NetworkError|network error|timeout)/i.test(raw);
   };
 
   const backendAvailable = !isBackendUnavailable(homeError);
   const showHomeHero = !searchTitle && backendAvailable && !homeLoading && !detailsLoading;
+  const showOfflineState = !homeLoading && !backendAvailable;
 
   useEffect(() => {
     try {
@@ -192,6 +194,11 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
   }, []);
 
   const handleProductSelect = async (product) => {
+    window.history.pushState(
+      { from: `${window.location.pathname}${window.location.search}` },
+      "",
+      `/products/${encodeURIComponent(product.id)}`
+    );
     setDetailsError("");
     setDetailsLoading(true);
     setSelectedProduct(null);
@@ -207,6 +214,13 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
   };
 
   const handleCloseProductDetails = () => {
+    if (window.history.state?.from) {
+      window.history.back();
+    } else {
+      window.history.replaceState({}, "", "/");
+      setSelectedProduct(null);
+      setActiveTab('home');
+    }
     setSelectedProduct(null);
     setActiveTab('home');
     setDetailsError("");
@@ -214,6 +228,7 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
   };
 
   const handleCategorySelect = async (category) => {
+    window.history.pushState({}, "", `/category/${encodeURIComponent(category)}`);
     setSelectedProduct(null);
     setActiveTab('home');
     clearSearchInput();
@@ -236,6 +251,7 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
   const handleSearchResults = async (query, products) => {
     if (!query || !query.trim()) return;
 
+    window.history.pushState({}, "", `/search?query=${encodeURIComponent(query.trim())}`);
     clearSearchInput();
     setSelectedCategory("");
     setSearchTitle(`Search results for “${query}”`);
@@ -267,6 +283,7 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
   };
 
   const handleResetHome = () => {
+    window.history.pushState({}, "", "/");
     clearSearchInput();
     setSelectedCategory("");
     setSearchTitle("");
@@ -285,6 +302,7 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
       handleRequireAuthentication();
       return;
     }
+    window.history.pushState({}, "", "/saved");
     setSelectedProduct(null);
     setDetailsError("");
     setActiveTab('saved');
@@ -307,6 +325,7 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
       handleRequireAuthentication();
       return;
     }
+    window.history.pushState({}, "", "/profile");
     setSelectedProduct(null);
     setDetailsError("");
     setActiveTab('profile');
@@ -315,6 +334,97 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
   const handleRequireAuthentication = () => {
     setAuthModalOpen(true);
   };
+
+  useEffect(() => {
+    const applyBrowserRoute = async () => {
+      const { pathname, search } = window.location;
+      const query = new URLSearchParams(search).get("query");
+
+      if (pathname === "/") {
+        setSelectedProduct(null);
+        setActiveTab("home");
+        setSearchTitle("");
+        setSelectedCategory("");
+        return;
+      }
+
+      if (pathname === "/saved") {
+        if (isAuthenticated) {
+          setSelectedProduct(null);
+          setActiveTab("saved");
+          setSavedLoading(true);
+          try {
+            const products = await getSavedProducts();
+            setSavedProducts(Array.isArray(products) ? products : []);
+          } catch (error) {
+            setSavedError(formatError(error));
+            setSavedProducts([]);
+          } finally {
+            setSavedLoading(false);
+          }
+        }
+        return;
+      }
+
+      if (pathname === "/profile") {
+        if (isAuthenticated) {
+          setSelectedProduct(null);
+          setActiveTab("profile");
+        }
+        return;
+      }
+
+      if (pathname.startsWith("/products/")) {
+        const productId = decodeURIComponent(pathname.slice("/products/".length));
+        if (!productId) return;
+
+        setActiveTab("home");
+        setDetailsError("");
+        setDetailsLoading(true);
+        try {
+          const details = await getProductById(productId);
+          setSelectedProduct(details);
+        } catch (error) {
+          setSelectedProduct(null);
+          setDetailsError(formatError(error));
+        } finally {
+          setDetailsLoading(false);
+        }
+        return;
+      }
+
+      if (pathname.startsWith("/category/")) {
+        const category = decodeURIComponent(pathname.slice("/category/".length));
+        setSelectedProduct(null);
+        setActiveTab("home");
+        setSelectedCategory(category);
+        setSearchTitle(`${category} Products`);
+        return;
+      }
+
+      if (pathname === "/search" && query) {
+        setSelectedProduct(null);
+        setActiveTab("home");
+        setSelectedCategory("");
+        setSearchTitle(`Search results for “${query}”`);
+        setSearchLoading(true);
+        setSearchError("");
+        try {
+          const products = await searchProducts(query);
+          setSearchResults(Array.isArray(products) ? products : []);
+        } catch (error) {
+          setSearchError(formatError(error));
+          setSearchResults([]);
+        } finally {
+          setSearchLoading(false);
+        }
+      }
+    };
+
+    window.addEventListener("popstate", applyBrowserRoute);
+    applyBrowserRoute();
+    return () => window.removeEventListener("popstate", applyBrowserRoute);
+  }, [isAuthenticated]);
 
   // Compute main content to avoid deep nested JSX/ternaries
   let mainContent = null;
@@ -374,7 +484,14 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
           </section>
         )}
 
-        {searchTitle ? (
+        {showOfflineState ? (
+          <section className="min-h-[70vh] px-4 sm:px-6 md:px-8 lg:px-10 py-16 flex items-center justify-center">
+            <div className="w-full rounded-3xl border border-red-200 bg-red-50 p-10 text-center text-red-700 shadow-sm">
+              <h2 className="text-2xl font-semibold">Unable to load content</h2>
+              <p className="mt-3">{homeError?.message || String(homeError)}</p>
+            </div>
+          </section>
+        ) : searchTitle ? (
           <SearchResults
             title={searchTitle}
             results={searchResults}
@@ -451,30 +568,34 @@ export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar
-        onHome={handleResetHome}
-        categories={categories}
-        onCategorySelect={handleCategorySelect}
-        isProductDetails={!!selectedProduct}
-        onSearch={backendAvailable ? handleSearchResults : undefined}
-        onLogout={onLogout}
-        onSaved={handleOpenSaved}
-        onProfile={handleOpenProfile}
-      />
+      {!showOfflineState && (
+        <Navbar
+          onHome={handleResetHome}
+          categories={categories}
+          onCategorySelect={handleCategorySelect}
+          isProductDetails={!!selectedProduct}
+          onSearch={backendAvailable ? handleSearchResults : undefined}
+          onLogout={onLogout}
+          onSaved={handleOpenSaved}
+          onProfile={handleOpenProfile}
+        />
+      )}
       <main className="grow p-2">{mainContent}</main>
 
-      <Footer />
-      <CustomAlertModal
-        open={authModalOpen}
-        title="Sign in required"
-        message="Please sign in to access saved products, your profile, or product actions."
-        actionLabel="Sign in"
-        onAction={() => {
-          setAuthModalOpen(false);
-          onSignIn?.();
-        }}
-        onClose={() => setAuthModalOpen(false)}
-      />
+      {!showOfflineState && <Footer />}
+      {!showOfflineState && (
+        <CustomAlertModal
+          open={authModalOpen}
+          title="Sign in required"
+          message="Please sign in to access saved products, your profile, or product actions."
+          actionLabel="Sign in"
+          onAction={() => {
+            setAuthModalOpen(false);
+            onSignIn?.();
+          }}
+          onClose={() => setAuthModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { getProductReviews } from "../services/searchService";
-import { addReview, removeSavedProduct, saveProduct } from "../services/profileService";
+import { getProductReviews, getReviewTags } from "../services/searchService";
+import { addReview, deleteReview, getSavedProductStatus, removeSavedProduct, saveProduct, updateReview } from "../services/profileService";
 
 const statusStyles = {
   Safe: "border-green-200 bg-green-50 text-green-900",
@@ -54,9 +54,37 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
   const [reviews, setReviews] = useState([]);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState("");
+  const [reviewTags, setReviewTags] = useState([]);
+  const [selectedReviewTags, setSelectedReviewTags] = useState([]);
+  const [reviewTagsLoading, setReviewTagsLoading] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [reviewActionLoading, setReviewActionLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    const loadSavedStatus = async () => {
+      if (!product?.id || !isAuthenticated) {
+        setIsSaved(false);
+        return;
+      }
+
+      try {
+        const savedStatus = await getSavedProductStatus(product.id);
+        if (isCurrent) setIsSaved(savedStatus?.saved === true);
+      } catch {
+        if (isCurrent) setIsSaved(false);
+      }
+    };
+
+    loadSavedStatus();
+    return () => {
+      isCurrent = false;
+    };
+  }, [product?.id, isAuthenticated]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -92,14 +120,28 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
       return;
     }
     setShowReviewForm(true);
+    loadReviewTags();
   };
   const handleCancelReview = () => {
     setShowReviewForm(false);
     setReviewError("");
     setNewReviewRating(5);
     setNewReviewText("");
+    setSelectedReviewTags([]);
   };
 
+  const loadReviewTags = async () => {
+    setReviewError("");
+    setReviewTagsLoading(true);
+    try {
+      setReviewTags(await getReviewTags(product.id));
+    } catch (error) {
+      setReviewTags([]);
+      setReviewError(error.message || "Unable to load review tags.");
+    } finally {
+      setReviewTagsLoading(false);
+    }
+  };
   const handleSubmitReview = async (e) => {
     e?.preventDefault?.();
     setReviewError("");
@@ -109,6 +151,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
       const createdReview = await addReview(product.id, {
         rating: Number(newReviewRating),
         text: newReviewText.trim(),
+        tags: selectedReviewTags,
       });
       setReviews((prev) => [createdReview, ...prev]);
       handleCancelReview();
@@ -116,6 +159,54 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
       setReviewError(error.message || "Unable to submit your review.");
     } finally {
       setReviewSubmitting(false);
+    }
+  };
+
+  const handleStartEditReview = async (review) => {
+    setReviewError("");
+    setEditingReviewId(review.id);
+    setNewReviewRating(review.rating || 5);
+    setNewReviewText(review.text || "");
+    setSelectedReviewTags(Array.isArray(review.tags) ? review.tags : []);
+    setShowReviewForm(false);
+    if (reviewTags.length === 0) await loadReviewTags();
+  };
+
+  const handleUpdateReview = async (e) => {
+    e?.preventDefault?.();
+    setReviewError("");
+    setReviewActionLoading(true);
+
+    try {
+      const updatedReview = await updateReview(editingReviewId, {
+        rating: Number(newReviewRating),
+        text: newReviewText.trim(),
+        tags: selectedReviewTags,
+      });
+      setReviews((currentReviews) => currentReviews.map((review) => review.id === editingReviewId ? updatedReview : review));
+      setEditingReviewId(null);
+      setNewReviewText("");
+      setNewReviewRating(5);
+      setSelectedReviewTags([]);
+    } catch (error) {
+      setReviewError(error.message || "Unable to update your review.");
+    } finally {
+      setReviewActionLoading(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm("Delete this review?")) return;
+    setReviewError("");
+    setReviewActionLoading(true);
+
+    try {
+      await deleteReview(reviewId);
+      setReviews((currentReviews) => currentReviews.filter((review) => review.id !== reviewId));
+    } catch (error) {
+      setReviewError(error.message || "Unable to delete your review.");
+    } finally {
+      setReviewActionLoading(false);
     }
   };
 
@@ -503,6 +594,31 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                             required
                           />
 
+                          {reviewTagsLoading && <p className="text-sm text-gray-500">Loading review tags...</p>}
+                          {!reviewTagsLoading && reviewTags.length > 0 && (
+                            <fieldset className="flex flex-col gap-2">
+                              <legend className="text-sm font-medium text-gray-700">Tags</legend>
+                              <div className="flex flex-wrap gap-2">
+                                {reviewTags.map((tag) => (
+                                  <label key={tag} className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedReviewTags.includes(tag)}
+                                      onChange={() =>
+                                        setSelectedReviewTags((currentTags) =>
+                                          currentTags.includes(tag)
+                                            ? currentTags.filter((currentTag) => currentTag !== tag)
+                                            : [...currentTags, tag]
+                                        )
+                                      }
+                                    />
+                                    {tag}
+                                  </label>
+                                ))}
+                              </div>
+                            </fieldset>
+                          )}
+
                           <div className="flex gap-3 mt-2">
                             <button type="submit" disabled={reviewSubmitting} className="bg-green-600 text-white px-4 py-2 rounded-md disabled:opacity-70">
                               {reviewSubmitting ? "Submitting..." : "Submit"}
@@ -524,12 +640,57 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                                 <div className="font-semibold text-gray-900">{r.name}</div>
                                 <div className="text-sm text-gray-500">{r.time}</div>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-3">
                                 <div className="text-yellow-400 font-semibold">{Array.from({ length: r.rating }).map((_, idx) => '★')}</div>
                                 <div className="text-sm text-gray-600">{r.rating}</div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditReview(r)}
+                                  disabled={reviewActionLoading}
+                                  className="p-1 text-gray-500 hover:text-green-600 disabled:opacity-50"
+                                  aria-label="Edit review"
+                                  title="Edit review"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 010 2.828l-8.486 8.486a2 2 0 01-.708.414l-4 1a1 1 0 01-1.213-1.213l1-4a2 2 0 01.414-.708l8.486-8.486a2 2 0 012.828 0z" /></svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteReview(r.id)}
+                                  disabled={reviewActionLoading}
+                                  className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50"
+                                  aria-label="Delete review"
+                                  title="Delete review"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.5 2a1 1 0 00-1 1v1H4a1 1 0 100 2h.5v10a2 2 0 002 2h7a2 2 0 002-2V6H16a1 1 0 100-2h-3.5V3a1 1 0 00-1-1h-3zm1 2h1V3h-1v1zM8 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
+                                </button>
                               </div>
                             </div>
-                            <p className="mt-3 text-gray-700 text-sm">{r.text}</p>
+                            {editingReviewId === r.id ? (
+                              <form onSubmit={handleUpdateReview} className="mt-4 flex flex-col gap-3">
+                                <select value={newReviewRating} onChange={(e) => setNewReviewRating(e.target.value)} className="w-28 rounded-md border-gray-200">
+                                  <option value={5}>5 - Excellent</option>
+                                  <option value={4}>4 - Good</option>
+                                  <option value={3}>3 - Okay</option>
+                                  <option value={2}>2 - Poor</option>
+                                  <option value={1}>1 - Terrible</option>
+                                </select>
+                                <textarea value={newReviewText} onChange={(e) => setNewReviewText(e.target.value)} rows={3} className="w-full rounded-md border-gray-200 p-3 text-sm text-gray-800" required />
+                                {!reviewTagsLoading && reviewTags.length > 0 && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {reviewTags.map((tag) => (
+                                      <label key={tag} className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                                        <input type="checkbox" checked={selectedReviewTags.includes(tag)} onChange={() => setSelectedReviewTags((currentTags) => currentTags.includes(tag) ? currentTags.filter((currentTag) => currentTag !== tag) : [...currentTags, tag])} />
+                                        {tag}
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="flex gap-2">
+                                  <button type="submit" disabled={reviewActionLoading} className="rounded-md bg-green-600 px-3 py-2 text-sm text-white disabled:opacity-50">Save</button>
+                                  <button type="button" onClick={() => setEditingReviewId(null)} className="rounded-md border border-gray-200 px-3 py-2 text-sm">Cancel</button>
+                                </div>
+                              </form>
+                            ) : <p className="mt-3 text-gray-700 text-sm">{r.text}</p>}
                             {Array.isArray(r.tags) && r.tags.length > 0 && (
                               <div className="mt-3 flex gap-2 flex-wrap">
                                 {r.tags.map((t) => (
@@ -537,7 +698,6 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                                 ))}
                               </div>
                             )}
-                            <div className="mt-3 text-sm text-gray-500">Helpful ({r.helpful})</div>
                           </div>
                         ))
                       ) : (
