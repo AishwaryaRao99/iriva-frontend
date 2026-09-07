@@ -1,4 +1,4 @@
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/transparency-portal"}/api/v1/profile`;
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}/api/v1/profile`;
 
 const request = async (endpoint = "", options = {}) => {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
