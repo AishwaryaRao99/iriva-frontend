@@ -1,5 +1,5 @@
-const AUTH_BASE_URL = "http://localhost:8080/transparency-portal/auth";
-const GOOGLE_OAUTH_URL = "http://localhost:8080/transparency-portal/oauth2/authorization/google";
+const AUTH_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}/auth`;
+const GOOGLE_OAUTH_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}/oauth2/authorization/google`;
 
 const DEFAULT_FETCH_OPTIONS = {
   credentials: "include",
