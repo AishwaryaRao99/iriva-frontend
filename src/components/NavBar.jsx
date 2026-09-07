@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 /**
  * Navbar Component
@@ -9,10 +9,24 @@ import { useState, useCallback } from "react";
  * - isProductDetails (boolean) - hide Home/Categories when viewing product details
  * - onSearch (function) - callback when search is performed
  */
-export default function Navbar({ onHome, categories = [], onCategorySelect, isProductDetails = false, onSearch }) {
+export default function Navbar({ onHome, categories = [], onCategorySelect, isProductDetails = false, onSearch, onLogout, onSaved, onProfile }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
+  const categoriesRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (categoriesRef.current && !categoriesRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
 
   const handleSearchClick = useCallback(async () => {
     if (!searchQuery.trim() || !onSearch) return;
@@ -40,26 +54,38 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
     <nav className="sticky top-0 z-40 w-full flex justify-between items-center px-4 sm:px-6 md:px-8 py-4 border-b bg-white shadow-sm">
       <button
         type="button"
-        onClick={onHome}
-        className="text-green-600 font-bold text-lg focus:outline-none hover:opacity-80 transition"
-        aria-label="TruthLabel Home"
+        onClick={() => setIsMobileMenuOpen((open) => !open)}
+        className="lg:hidden mr-3 p-2 text-gray-600 hover:text-green-600 focus:outline-none"
+        aria-label="Open navigation menu"
+        aria-expanded={isMobileMenuOpen}
       >
-        🌿 TruthLabel
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
       </button>
 
-      <div className="flex gap-4 sm:gap-6 text-gray-700 items-center flex-1 justify-center lg:justify-start ml-6">
-        {/* Always show Home and Categories so they're available on product pages too */}
+      <button
+        type="button"
+        onClick={onHome}
+        className="text-green-600 font-bold text-lg focus:outline-none hover:opacity-80 transition"
+        aria-label="Iriva Home"
+      >
+        🌿 Iriva
+      </button>
+
+      <div className="flex gap-4 sm:gap-6 text-gray-700 items-center flex-1 justify-center lg:justify-start ml-0 lg:ml-6">
+        {/* Always show Home, Categories, Saved and Profile so they're available on product pages too */}
         <>
           <button
             type="button"
             onClick={onHome}
-            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden sm:block"
+            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden lg:block"
           >
             Home
           </button>
 
           {categories.length > 0 && (
-            <div className="relative hidden sm:block">
+            <div ref={categoriesRef} className="relative hidden lg:block">
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen((open) => !open)}
@@ -90,8 +116,76 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
               )}
             </div>
           )}
+          <button
+            type="button"
+            onClick={onSaved}
+            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden lg:block"
+          >
+            Saved
+          </button>
+
+          <button
+            type="button"
+            onClick={onProfile}
+            className="text-sm font-medium hover:text-green-600 focus:outline-none transition hidden lg:block"
+          >
+            Profile
+          </button>
         </>
       </div>
+
+      {isMobileMenuOpen && (
+        <div className="absolute left-4 right-4 top-full mt-2 rounded-xl border border-gray-200 bg-white p-2 shadow-lg lg:hidden">
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              onHome?.();
+            }}
+            className="block w-full rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Home
+          </button>
+          {categories.length > 0 && (
+            <div>
+              <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Categories</div>
+              {categories.map((category) => (
+                <button
+                  key={category.name}
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onCategorySelect?.(category.name);
+                  }}
+                  className="block w-full rounded-lg px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              onSaved?.();
+            }}
+            className="block w-full rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Saved
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              onProfile?.();
+            }}
+            className="block w-full rounded-lg px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Profile
+          </button>
+        </div>
+      )}
 
       {/* Search bar */}
       {onSearch && (
@@ -121,17 +215,40 @@ export default function Navbar({ onHome, categories = [], onCategorySelect, isPr
       )}
 
       {/* Profile icon */}
-      <button
-        type="button"
-        disabled
-        title="Coming in future update"
-        className="ml-4 p-2 text-gray-400 cursor-not-allowed focus:outline-none transition"
-        aria-label="Profile"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-        </svg>
-      </button>
+      <div className="relative ml-4">
+        <button
+          type="button"
+          onClick={() => {
+            if (!onLogout) {
+              onProfile?.();
+              return;
+            }
+            setIsProfileMenuOpen((open) => !open);
+          }}
+          className={`p-2 rounded-full focus:outline-none transition ${onLogout ? "text-green-700 hover:bg-green-50" : "text-gray-500 hover:bg-green-50 hover:text-green-700"}`}
+          aria-label="Profile"
+          title={onLogout ? "Open profile menu" : "Sign in to open your profile"}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+          </svg>
+        </button>
+
+        {onLogout && isProfileMenuOpen && (
+          <div className="absolute right-0 mt-2 w-44 rounded-2xl border border-gray-200 bg-white shadow-lg z-50">
+            <button
+              type="button"
+              onClick={() => {
+                setIsProfileMenuOpen(false);
+                onLogout();
+              }}
+              className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none"
+            >
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
     </nav>
   );
 }

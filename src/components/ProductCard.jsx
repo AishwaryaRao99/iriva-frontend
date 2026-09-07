@@ -12,7 +12,7 @@
  * - onInteraction
  * - onViewDetails
  */
-export default function ProductCard({ id, productName, description, imageUrl, transparencyScore = 0, ethicalScore, onInteraction, onViewDetails }) {
+export default function ProductCard({ id, productName, description, imageUrl, transparencyScore = 0, ethicalScore, onInteraction, onViewDetails, descriptionMaxLength = 120 }) {
   const getScoreColor = () => {
     if (transparencyScore >= 8) return "bg-green-100 text-green-700";
     if (transparencyScore >= 5) return "bg-yellow-100 text-yellow-700";
@@ -24,12 +24,16 @@ export default function ProductCard({ id, productName, description, imageUrl, tr
     onViewDetails?.({ id, productName, description, imageUrl, transparencyScore, ethicalScore });
   };
 
+  const truncatedDescription = description && description.length > descriptionMaxLength
+    ? `${description.slice(0, descriptionMaxLength - 3).trimEnd()}...`
+    : description;
+
   return (
     <button
       type="button"
       onClick={handleCardClick}
       aria-label={`View details for ${productName}`}
-      className="bg-white rounded-xl shadow p-3 hover:shadow-lg transition text-left w-full"
+      className="bg-white rounded-xl shadow p-3 hover:shadow-lg transition text-left w-full h-100 flex flex-col"
     >
       {/* Product Image */}
       {imageUrl ? (
@@ -39,9 +43,9 @@ export default function ProductCard({ id, productName, description, imageUrl, tr
       )}
 
       <h3 className="font-semibold text-gray-900">{productName}</h3>
-      {description ? <p className="text-sm text-gray-500 mt-2">{description}</p> : null}
+      {truncatedDescription ? <p className="text-sm text-gray-500 mt-2 min-h-12">{truncatedDescription}</p> : null}
 
-      <div className={`mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${getScoreColor()}`}>
+      <div className={`mt-auto inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${getScoreColor()}`}>
         {transparencyScore}% Transparent
       </div>
 

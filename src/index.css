@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 /* Responsive page padding for home/search results pages
 	 - Mobile / Tablet: no extra side padding
 	 - Desktop (>=1024px): 20% left/right padding

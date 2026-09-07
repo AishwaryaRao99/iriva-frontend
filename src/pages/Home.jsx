@@ -1,7 +1,9 @@
 // src/pages/Home.jsx
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Navbar from "../components/NavBar";
+import Saved from "./Saved";
+import Profile from "./Profile";
 import Hero from "../components/TopSection";
 import CategorySection from "../components/CategorySection";
 import ProductSection from "../components/ProductSection";
@@ -9,6 +11,7 @@ import ProductCard from "../components/ProductCard";
 import ProductDetails from "../components/ProductDetails";
 import SearchResults from "../components/SearchResults";
 import Footer from "../components/Footer";
+import CustomAlertModal from "../components/CustomAlertModal";
 import {
   getProductsByCategory,
   getProductById,
@@ -17,8 +20,10 @@ import {
   getCategories,
 } from "../services/searchService";
 import { formatError } from "../utils/errorUtils";
+import { getSavedProducts } from "../services/profileService";
 
-export default function Home() {
+export default function Home({ onLogout, isAuthenticated = false, onSignIn }) {
+  const [activeTab, setActiveTab] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState("");
   const [searchTitle, setSearchTitle] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -35,8 +40,13 @@ export default function Home() {
   const [detailsError, setDetailsError] = useState("");
   const [homeError, setHomeError] = useState("");
   const [homeLoading, setHomeLoading] = useState(true);
+  const [savedProducts, setSavedProducts] = useState([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savedError, setSavedError] = useState("");
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const hasMountedPersistence = useRef(false);
 
-  const STORAGE_KEY = "truthlabel-frontend-state";
+  const STORAGE_KEY = "iriva-frontend-state";
 
   const clearSearchInput = () => {
     setSearchError("");
@@ -44,12 +54,14 @@ export default function Home() {
   };
 
   const isBackendUnavailable = (messageOrObj) => {
+    if (messageOrObj?.connectivity === true) return true;
     const raw = typeof messageOrObj === "string" ? messageOrObj : messageOrObj?.raw || messageOrObj?.message || "";
-    return /(Cannot connect to backend|Request timed out|Failed to fetch|NetworkError)/i.test(raw);
+    return /(Cannot connect to (backend|server)|Request timed out|Failed to fetch|NetworkError|network error|timeout)/i.test(raw);
   };
 
   const backendAvailable = !isBackendUnavailable(homeError);
   const showHomeHero = !searchTitle && backendAvailable && !homeLoading && !detailsLoading;
+  const showOfflineState = !homeLoading && !backendAvailable;
 
   useEffect(() => {
     try {
@@ -58,6 +70,7 @@ export default function Home() {
       const parsed = JSON.parse(persisted);
 
       if (parsed?.selectedProduct) setSelectedProduct(parsed.selectedProduct);
+      if (parsed?.activeTab) setActiveTab(parsed.activeTab);
       if (parsed?.searchTitle) setSearchTitle(parsed.searchTitle);
       if (parsed?.selectedCategory) setSelectedCategory(parsed.selectedCategory);
       if (Array.isArray(parsed?.searchResults)) setSearchResults(parsed.searchResults);
@@ -90,9 +103,15 @@ export default function Home() {
   }, [selectedCategory]);
 
   useEffect(() => {
+    if (!hasMountedPersistence.current) {
+      hasMountedPersistence.current = true;
+      return;
+    }
+
     try {
       const payload = {
         selectedProduct,
+        activeTab,
         searchTitle,
         selectedCategory,
         searchResults,
@@ -103,7 +122,7 @@ export default function Home() {
     } catch (error) {
       console.warn("Unable to persist state:", error);
     }
-  }, [selectedProduct, searchTitle, selectedCategory, searchResults, allProducts, hasLoadedAllProducts]);
+  }, [selectedProduct, activeTab, searchTitle, selectedCategory, searchResults, allProducts, hasLoadedAllProducts]);
 
   const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
@@ -175,6 +194,11 @@ export default function Home() {
   }, []);
 
   const handleProductSelect = async (product) => {
+    window.history.pushState(
+      { from: `${window.location.pathname}${window.location.search}` },
+      "",
+      `/products/${encodeURIComponent(product.id)}`
+    );
     setDetailsError("");
     setDetailsLoading(true);
     setSelectedProduct(null);
@@ -190,12 +214,23 @@ export default function Home() {
   };
 
   const handleCloseProductDetails = () => {
+    if (window.history.state?.from) {
+      window.history.back();
+    } else {
+      window.history.replaceState({}, "", "/");
+      setSelectedProduct(null);
+      setActiveTab('home');
+    }
     setSelectedProduct(null);
+    setActiveTab('home');
     setDetailsError("");
     setDetailsLoading(false);
   };
 
   const handleCategorySelect = async (category) => {
+    window.history.pushState({}, "", `/category/${encodeURIComponent(category)}`);
+    setSelectedProduct(null);
+    setActiveTab('home');
     clearSearchInput();
     setSelectedCategory(category);
     setSearchTitle(`${category} Products`);
@@ -216,6 +251,7 @@ export default function Home() {
   const handleSearchResults = async (query, products) => {
     if (!query || !query.trim()) return;
 
+    window.history.pushState({}, "", `/search?query=${encodeURIComponent(query.trim())}`);
     clearSearchInput();
     setSelectedCategory("");
     setSearchTitle(`Search results for “${query}”`);
@@ -247,6 +283,7 @@ export default function Home() {
   };
 
   const handleResetHome = () => {
+    window.history.pushState({}, "", "/");
     clearSearchInput();
     setSelectedCategory("");
     setSearchTitle("");
@@ -257,124 +294,308 @@ export default function Home() {
     setDetailsError("");
     setDetailsLoading(false);
     sessionStorage.removeItem(STORAGE_KEY);
+    setActiveTab('home');
   };
+
+  const handleOpenSaved = async () => {
+    if (!isAuthenticated) {
+      handleRequireAuthentication();
+      return;
+    }
+    window.history.pushState({}, "", "/saved");
+    setSelectedProduct(null);
+    setDetailsError("");
+    setActiveTab('saved');
+    setSavedLoading(true);
+    setSavedError("");
+
+    try {
+      const products = await getSavedProducts();
+      setSavedProducts(Array.isArray(products) ? products : []);
+    } catch (error) {
+      setSavedError(formatError(error));
+      setSavedProducts([]);
+    } finally {
+      setSavedLoading(false);
+    }
+  };
+
+  const handleOpenProfile = () => {
+    if (!isAuthenticated) {
+      handleRequireAuthentication();
+      return;
+    }
+    window.history.pushState({}, "", "/profile");
+    setSelectedProduct(null);
+    setDetailsError("");
+    setActiveTab('profile');
+  };
+
+  const handleRequireAuthentication = () => {
+    setAuthModalOpen(true);
+  };
+
+  useEffect(() => {
+    const applyBrowserRoute = async () => {
+      const { pathname, search } = window.location;
+      const query = new URLSearchParams(search).get("query");
+
+      if (pathname === "/") {
+        setSelectedProduct(null);
+        setActiveTab("home");
+        setSearchTitle("");
+        setSelectedCategory("");
+        return;
+      }
+
+      if (pathname === "/saved") {
+        if (isAuthenticated) {
+          setSelectedProduct(null);
+          setActiveTab("saved");
+          setSavedLoading(true);
+          try {
+            const products = await getSavedProducts();
+            setSavedProducts(Array.isArray(products) ? products : []);
+          } catch (error) {
+            setSavedError(formatError(error));
+            setSavedProducts([]);
+          } finally {
+            setSavedLoading(false);
+          }
+        }
+        return;
+      }
+
+      if (pathname === "/profile") {
+        if (isAuthenticated) {
+          setSelectedProduct(null);
+          setActiveTab("profile");
+        }
+        return;
+      }
+
+      if (pathname.startsWith("/products/")) {
+        const productId = decodeURIComponent(pathname.slice("/products/".length));
+        if (!productId) return;
+
+        setActiveTab("home");
+        setDetailsError("");
+        setDetailsLoading(true);
+        try {
+          const details = await getProductById(productId);
+          setSelectedProduct(details);
+        } catch (error) {
+          setSelectedProduct(null);
+          setDetailsError(formatError(error));
+        } finally {
+          setDetailsLoading(false);
+        }
+        return;
+      }
+
+      if (pathname.startsWith("/category/")) {
+        const category = decodeURIComponent(pathname.slice("/category/".length));
+        setSelectedProduct(null);
+        setActiveTab("home");
+        setSelectedCategory(category);
+        setSearchTitle(`${category} Products`);
+        return;
+      }
+
+      if (pathname === "/search" && query) {
+        setSelectedProduct(null);
+        setActiveTab("home");
+        setSelectedCategory("");
+        setSearchTitle(`Search results for “${query}”`);
+        setSearchLoading(true);
+        setSearchError("");
+        try {
+          const products = await searchProducts(query);
+          setSearchResults(Array.isArray(products) ? products : []);
+        } catch (error) {
+          setSearchError(formatError(error));
+          setSearchResults([]);
+        } finally {
+          setSearchLoading(false);
+        }
+      }
+    };
+
+    window.addEventListener("popstate", applyBrowserRoute);
+    applyBrowserRoute();
+    return () => window.removeEventListener("popstate", applyBrowserRoute);
+  }, [isAuthenticated]);
+
+  // Compute main content to avoid deep nested JSX/ternaries
+  let mainContent = null;
+
+  if (selectedProduct) {
+    mainContent = (
+      <ProductDetails
+        product={selectedProduct}
+        onClose={handleCloseProductDetails}
+        backLabel={searchTitle ? "Back to results" : "Back to Home"}
+        isAuthenticated={isAuthenticated}
+        onRequireAuthentication={handleRequireAuthentication}
+      />
+    );
+  } else if (activeTab === 'saved') {
+    mainContent = (
+      <Saved
+        products={savedProducts}
+        loading={savedLoading}
+        error={savedError}
+        onViewDetails={handleProductSelect}
+      />
+    );
+  } else if (activeTab === 'profile') {
+    mainContent = <Profile onLogout={onLogout} />;
+  } else {
+    mainContent = (
+      <div className="product-page-padding">
+        {showHomeHero && !searchTitle && (
+          <Hero
+            title="Know what's inside your products"
+            subtitle="Discover transparency scores and ingredient breakdowns"
+            onSearch={handleSearchResults}
+            clearSearchSignal={searchClearSignal}
+          />
+        )}
+
+        {searchTitle && (
+          <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 bg-white border-b border-gray-200">
+            <button
+              type="button"
+              onClick={handleResetHome}
+              className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold text-base sm:text-lg focus:outline-none"
+            >
+              <span className="text-xl">←</span>
+              Back to Home
+            </button>
+          </div>
+        )}
+
+        {homeError && !searchTitle && backendAvailable && (
+          <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
+            <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
+              <p className="text-lg font-semibold">Unable to load home content</p>
+              <p className="mt-3">{homeError?.message || String(homeError)}</p>
+            </div>
+          </section>
+        )}
+
+        {showOfflineState ? (
+          <section className="min-h-[70vh] px-4 sm:px-6 md:px-8 lg:px-10 py-16 flex items-center justify-center">
+            <div className="w-full rounded-3xl border border-red-200 bg-red-50 p-10 text-center text-red-700 shadow-sm">
+              <h2 className="text-2xl font-semibold">Unable to load content</h2>
+              <p className="mt-3">{homeError?.message || String(homeError)}</p>
+            </div>
+          </section>
+        ) : searchTitle ? (
+          <SearchResults
+            title={searchTitle}
+            results={searchResults}
+            loading={searchLoading || homeLoading}
+            error={searchError}
+            onProductInteraction={clearSearchInput}
+            onViewDetails={handleProductSelect}
+          />
+        ) : homeLoading ? (
+          <section className="min-h-[70vh] flex items-center justify-center bg-white">
+            <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
+            </div>
+          </section>
+        ) : detailsLoading ? (
+          <section className="min-h-[70vh] flex items-center justify-center bg-white">
+            <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
+            </div>
+          </section>
+        ) : detailsError ? (
+          <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
+            <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
+              <p className="text-lg font-semibold">Unable to load product details</p>
+              <p className="mt-3">{detailsError?.message || String(detailsError)}</p>
+            </div>
+          </section>
+        ) : !searchTitle && !backendAvailable ? (
+          <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-16">
+            <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-700 shadow-sm">
+              <h2 className="text-2xl font-semibold mb-4">Iriva is temporarily offline</h2>
+              <p className="text-base text-gray-600">
+                Unable to connect to the server. Please check your internet connection or try again later. If the issue persists, contact <a href="mailto:aishwaryarao669@gmail.com" className="text-green-600 hover:underline">here</a>.
+              </p>
+            </div>
+          </section>
+        ) : !searchTitle ? (
+          <>
+            <CategorySection
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategorySelect={handleCategorySelect}
+            />
+
+            <ProductSection
+              title="Trending Products"
+              products={trendingProducts}
+              onViewAll={handleAllProductsLoaded}
+              onProductInteraction={clearSearchInput}
+              onViewDetails={handleProductSelect}
+            />
+
+            <ProductSection
+              title="Recently Reviewed"
+              products={recentProducts}
+              onViewAll={handleAllProductsLoaded}
+              onProductInteraction={clearSearchInput}
+              onViewDetails={handleProductSelect}
+            />
+          </>
+        ) : (
+          <SearchResults
+            title={searchTitle}
+            results={searchResults}
+            loading={searchLoading}
+            error={searchError}
+            onProductInteraction={clearSearchInput}
+            onViewDetails={handleProductSelect}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar
-        onHome={handleResetHome}
-        categories={categories}
-        onCategorySelect={handleCategorySelect}
-        isProductDetails={!!selectedProduct}
-        onSearch={backendAvailable ? handleSearchResults : undefined}
-      />
-      <main className="flex-grow p-2">
-      {!selectedProduct ? (
-        <div className="product-page-padding">
-          {showHomeHero && (
-            <Hero
-              title="Know what's inside your products"
-              subtitle="Discover transparency scores and ingredient breakdowns"
-              onSearch={handleSearchResults}
-              clearSearchSignal={searchClearSignal}
-            />
-          )}
-
-          {searchTitle && (
-        <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 bg-white border-b border-gray-200">
-          <button
-            type="button"
-            onClick={handleResetHome}
-            className="flex items-center gap-2 text-green-600 hover:text-green-700 font-semibold text-base sm:text-lg focus:outline-none"
-          >
-            <span className="text-xl">←</span>
-            Back to Home
-          </button>
-        </div>
-      )}
-
-      {homeError && !searchTitle && backendAvailable && (
-        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
-            <p className="text-lg font-semibold">Unable to load home content</p>
-            <p className="mt-3">{homeError?.message || String(homeError)}</p>
-          </div>
-        </section>
-      )}
-
-      {homeLoading ? (
-        <section className="min-h-[70vh] flex items-center justify-center bg-white">
-          <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
-          </div>
-        </section>
-      ) : detailsLoading ? (
-        <section className="min-h-[70vh] flex items-center justify-center bg-white">
-          <div className="flex flex-col items-center rounded-3xl bg-white/80 p-10 shadow-sm backdrop-blur-sm">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
-          </div>
-        </section>
-      ) : detailsError ? (
-        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-10">
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-700 shadow-sm">
-            <p className="text-lg font-semibold">Unable to load product details</p>
-              <p className="mt-3">{detailsError?.message || String(detailsError)}</p>
-          </div>
-        </section>
-      ) : !searchTitle && !backendAvailable ? (
-        <section className="px-4 sm:px-6 md:px-8 lg:px-10 py-16">
-          <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center text-gray-700 shadow-sm">
-            <h2 className="text-2xl font-semibold mb-4">TruthLabel is temporarily offline</h2>
-            <p className="text-base text-gray-600">
-              Unable to connect to the server. Please check your internet connection or try again later. If the issue persists, contact <a href="mailto:aishwaryarao669@gmail.com" className="text-green-600 hover:underline">here</a>.
-            </p>
-          </div>
-        </section>
-      ) : !searchTitle ? (
-        <>
-          <CategorySection
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onCategorySelect={handleCategorySelect}
-          />
-
-          <ProductSection
-            title="Trending Products"
-            products={trendingProducts}
-            onViewAll={handleAllProductsLoaded}
-            onProductInteraction={clearSearchInput}
-            onViewDetails={handleProductSelect}
-          />
-
-          <ProductSection
-            title="Recently Reviewed"
-            products={recentProducts}
-            onViewAll={handleAllProductsLoaded}
-            onProductInteraction={clearSearchInput}
-            onViewDetails={handleProductSelect}
-          />
-        </>
-      ) : (
-        <SearchResults
-          title={searchTitle}
-          results={searchResults}
-          loading={searchLoading}
-          error={searchError}
-          onProductInteraction={clearSearchInput}
-          onViewDetails={handleProductSelect}
+      {!showOfflineState && (
+        <Navbar
+          onHome={handleResetHome}
+          categories={categories}
+          onCategorySelect={handleCategorySelect}
+          isProductDetails={!!selectedProduct}
+          onSearch={backendAvailable ? handleSearchResults : undefined}
+          onLogout={onLogout}
+          onSaved={handleOpenSaved}
+          onProfile={handleOpenProfile}
         />
       )}
-        </div>
-      ) : (
-        <ProductDetails
-          product={selectedProduct}
-          onClose={handleCloseProductDetails}
-          backLabel={searchTitle ? "Back to results" : "Back to Home"}
+      <main className="grow p-2">{mainContent}</main>
+
+      {!showOfflineState && <Footer />}
+      {!showOfflineState && (
+        <CustomAlertModal
+          open={authModalOpen}
+          title="Sign in required"
+          message="Please sign in to access saved products, your profile, or product actions."
+          actionLabel="Sign in"
+          onAction={() => {
+            setAuthModalOpen(false);
+            onSignIn?.();
+          }}
+          onClose={() => setAuthModalOpen(false)}
         />
       )}
-      </main>
-
-      <Footer />
     </div>
   );
 }
