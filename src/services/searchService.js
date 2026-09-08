@@ -8,7 +8,7 @@ const SEARCH_BRAND_ENDPOINT = `${API_BASE_URL}/paginated/search-brand`;
 const ALL_PRODUCTS_ENDPOINT = `${API_BASE_URL}/paginated/all`;
 const CATEGORY_PRODUCTS_ENDPOINT = `${API_BASE_URL}/paginated/by-category`;
 const CATEGORIES_ENDPOINT = `${API_BASE_URL}/categories`;
-const TIMEOUT_DURATION_MS = 10000;
+const TIMEOUT_DURATION_MS = 20000;
 const DEFAULT_FETCH_OPTIONS = {
   credentials: "include",
   mode: "cors",
