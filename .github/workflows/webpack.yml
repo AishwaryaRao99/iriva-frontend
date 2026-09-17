@@ -1,9 +1,13 @@
 name: Iriva Frontend CI and SonarQube
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
 
 jobs:
   build-and-analyze:
@@ -31,3 +35,25 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_FRONTEND_TOKEN }}
+
+  deploy:
+    needs: build-and-analyze
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel
+
+      - name: Deploy to Vercel
+        run: vercel --prod --token "${{ secrets.VERCEL_TOKEN }}"
