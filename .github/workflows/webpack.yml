@@ -65,6 +65,7 @@ jobs:
         run: |
           vercel project inspect "$VERCEL_PROJECT_ID" \
             --token="$VERCEL_TOKEN" \
+            --scope="aishwarya-s-projects99" \
             --non-interactive
 
       - name: Check Vercel account
