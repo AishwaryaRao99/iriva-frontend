@@ -56,7 +56,16 @@ jobs:
         run: npm install --global vercel
 
       - name: Remove existing Vercel configuration
-        run: rm -rf .vercel      
+        run: rm -rf .vercel   
+
+      - name: Test Vercel project access
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: |
+          vercel project inspect "$VERCEL_PROJECT_ID" \
+            --token="$VERCEL_TOKEN" \
+            --non-interactive
 
       - name: Check Vercel account
         env:
