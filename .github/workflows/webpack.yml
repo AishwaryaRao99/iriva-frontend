@@ -65,6 +65,5 @@ jobs:
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
         run:
-          vercel link --yes --project="${{ vars.VERCEL_PROJECT_ID }}" --token="$VERCEL_TOKEN"
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --yes --token="$VERCEL_TOKEN"
