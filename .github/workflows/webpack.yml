@@ -57,7 +57,7 @@ jobs:
 
       - name: Remove existing Vercel configuration
         shell: bash
-        run: rm -rf .vercel          
+        run: rmdir /s /q .vercel         
       
       - name: Link and Deploy to Vercel
         env:
