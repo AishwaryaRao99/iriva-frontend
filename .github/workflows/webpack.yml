@@ -39,31 +39,56 @@ jobs:
   deploy:
     needs: build-and-analyze
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
+  
     runs-on: ubuntu-latest
-
+  
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+  
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-
+  
+      - name: Install dependencies
+        run: npm ci
+  
+      - name: Build frontend
+        run: npm run build
+  
       - name: Install Vercel CLI
         run: npm install --global vercel
-
+  
       - name: Remove existing Vercel configuration
-        shell: bash
-        run: rmdir /s /q .vercel         
-      
-      - name: Link and Deploy to Vercel
+        run: rm -rf .vercel
+  
+      - name: Link Vercel project
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
-        run:
-          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-          vercel build --prod --yes --token="$VERCEL_TOKEN"
+        run: |
+          vercel link \
+            --yes \
+            --project="$VERCEL_PROJECT_ID" \
+            --scope="$VERCEL_ORG_ID" \
+            --token="$VERCEL_TOKEN"
+  
+      - name: Pull production configuration
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel pull \
+            --yes \
+            --environment=production \
+            --token="$VERCEL_TOKEN"
+  
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel --prod \
+            --yes \
+            --token="$VERCEL_TOKEN"
