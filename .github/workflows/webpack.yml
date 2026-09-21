@@ -27,37 +27,37 @@ jobs:
           cache: 'npm'
 
       - name: Install Vercel CLI
-        run: npm install --global vercel
+        run: npm install --g vercel
 
       - name: Remove existing Vercel configuration
         run: rm -rf .vercel   
 
-      - name: Test Vercel project access
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-        run: |
-          vercel project inspect "$VERCEL_PROJECT_ID" \
-            --token="$VERCEL_TOKEN" \
-            --non-interactive
+   #   - name: Test Vercel project access
+   #     env:
+   #       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+   #       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+   #     run: |
+    #      vercel project inspect "$VERCEL_PROJECT_ID" \
+  #          --token="$VERCEL_TOKEN" \
+  #          --non-interactive
 
-      - name: Check Vercel account
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          vercel whoami --token="$VERCEL_TOKEN"
+    #  - name: Check Vercel account
+    #    env:
+    #      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    #    run: |
+    #      vercel whoami --token="$VERCEL_TOKEN"
 
-      - name: Link Vercel project
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
-        run: |
-          vercel link \
-            --yes \
-            --project="$VERCEL_PROJECT_ID" \
-            --scope="$VERCEL_ORG_ID" \
-            --token="$VERCEL_TOKEN"
+     # - name: Link Vercel project
+     #   env:
+     #     VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+     #     VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+     #     VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+     #   run: |
+     #     vercel link \
+     #       --yes \
+     #       --project="$VERCEL_PROJECT_ID" \
+     #       --scope="$VERCEL_ORG_ID" \
+     #       --token="$VERCEL_TOKEN"
             
       - name: Pull and Deploy to Vercel
         env:
@@ -65,5 +65,5 @@ jobs:
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
         run:
-          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-          vercel --prod --yes --token="$VERCEL_TOKEN"
+          #vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
