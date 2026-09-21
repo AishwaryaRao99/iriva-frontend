@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import CategoryCard from "./CategoryCard";
 
-//tests for CategoryCard component
+//tests for CategoryCard
 afterEach(cleanup);
 
 describe("CategoryCard", () => {
