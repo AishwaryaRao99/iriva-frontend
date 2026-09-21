@@ -113,6 +113,9 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
   const averageRating = totalReviews > 0 ? (reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / totalReviews).toFixed(1) : "0.0";
   const ratingCounts = [0, 0, 0, 0, 0, 0];
   reviews.forEach((r) => (ratingCounts[Number(r.rating) || 0] += 1));
+  const orderedReviews = [...reviews].sort((firstReview, secondReview) =>
+    Number(secondReview.editable === true) - Number(firstReview.editable === true)
+  );
 
   const handleStartReview = () => {
     if (!isAuthenticated) {
@@ -163,6 +166,8 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
   };
 
   const handleStartEditReview = async (review) => {
+    if (review?.editable !== true) return;
+
     setReviewError("");
     setEditingReviewId(review.id);
     setNewReviewRating(review.rating || 5);
@@ -183,7 +188,9 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
         text: newReviewText.trim(),
         tags: selectedReviewTags,
       });
-      setReviews((currentReviews) => currentReviews.map((review) => review.id === editingReviewId ? updatedReview : review));
+      setReviews((currentReviews) => currentReviews.map((review) =>
+        review.id === editingReviewId ? { ...review, ...updatedReview } : review
+      ));
       setEditingReviewId(null);
       setNewReviewText("");
       setNewReviewRating(5);
@@ -196,6 +203,9 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
   };
 
   const handleDeleteReview = async (reviewId) => {
+    const review = reviews.find((item) => item.id === reviewId);
+    if (review?.editable !== true) return;
+
     if (!window.confirm("Delete this review?")) return;
     setReviewError("");
     setReviewActionLoading(true);
@@ -342,7 +352,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
 
             {/* Transparency Score Badge */}
             <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-4 mb-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-green-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-green-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
               </svg>
               <div>
@@ -362,7 +372,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
               <div className="grid gap-3 mb-6">
                 {ethicalSummary.map((item) => (
                   <div key={item.title} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
-                    <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                    <span className="text-2xl shrink-0">{item.icon}</span>
                     <div>
                       <p className="font-semibold text-gray-900 text-base">{item.title}</p>
                       <p className="text-sm text-gray-600 mt-1">{item.description}</p>
@@ -388,7 +398,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                 type="button"
                 onClick={handleSaveProduct}
                 disabled={saveLoading}
-                className={`flex-shrink-0 p-3 text-gray-400 focus:outline-none transition border border-gray-200 rounded-lg disabled:opacity-70 ${isSaved ? "text-green-600" : "hover:text-green-600"}`}
+                className={`shrink-0 p-3 text-gray-400 focus:outline-none transition border border-gray-200 rounded-lg disabled:opacity-70 ${isSaved ? "text-green-600" : "hover:text-green-600"}`}
                 aria-label="Add to favorites"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
@@ -543,7 +553,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                     {/* Ratings Summary */}
                     <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                       <div className="md:flex md:items-center md:gap-8">
-                        <div className="md:flex-shrink-0">
+                        <div className="md:shrink-0">
                           <div className="text-4xl font-bold text-gray-900">{averageRating}</div>
                           <div className="text-sm text-gray-500">Based on {totalReviews} reviews</div>
                         </div>
@@ -633,36 +643,40 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                     {/* Reviews List */}
                     <div className="mt-6 space-y-4">
                       {reviews.length > 0 ? (
-                        reviews.map((r) => (
+                        orderedReviews.map((r) => (
                           <div key={r.id} className="rounded-lg border border-gray-200 p-4 bg-white">
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="font-semibold text-gray-900">{r.name}</div>
+                                <div className="font-semibold text-gray-900">{r.name || "Anonymous reviewer"}</div>
                                 <div className="text-sm text-gray-500">{r.time}</div>
                               </div>
                               <div className="flex items-center gap-3">
                                 <div className="text-yellow-400 font-semibold">{Array.from({ length: r.rating }).map((_, idx) => '★')}</div>
                                 <div className="text-sm text-gray-600">{r.rating}</div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleStartEditReview(r)}
-                                  disabled={reviewActionLoading}
-                                  className="p-1 text-gray-500 hover:text-green-600 disabled:opacity-50"
-                                  aria-label="Edit review"
-                                  title="Edit review"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 010 2.828l-8.486 8.486a2 2 0 01-.708.414l-4 1a1 1 0 01-1.213-1.213l1-4a2 2 0 01.414-.708l8.486-8.486a2 2 0 012.828 0z" /></svg>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteReview(r.id)}
-                                  disabled={reviewActionLoading}
-                                  className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50"
-                                  aria-label="Delete review"
-                                  title="Delete review"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.5 2a1 1 0 00-1 1v1H4a1 1 0 100 2h.5v10a2 2 0 002 2h7a2 2 0 002-2V6H16a1 1 0 100-2h-3.5V3a1 1 0 00-1-1h-3zm1 2h1V3h-1v1zM8 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
-                                </button>
+                                {r.editable === true && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEditReview(r)}
+                                      disabled={reviewActionLoading}
+                                      className="p-1 text-gray-500 hover:text-green-600 disabled:opacity-50"
+                                      aria-label="Edit review"
+                                      title="Edit review"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 010 2.828l-8.486 8.486a2 2 0 01-.708.414l-4 1a2 2 0 01-1.213-1.213l1-4a2 2 0 01.414-.708l8.486-8.486a2 2 0 012.828 0z" /></svg>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteReview(r.id)}
+                                      disabled={reviewActionLoading}
+                                      className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50"
+                                      aria-label="Delete review"
+                                      title="Delete review"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.5 2a1 1 0 00-1 1v1H4a1 1 0 100 2h.5v10a2 2 0 002 2h7a2 2 0 002-2V6H16a1 1 0 100-2h-3.5V3a1 1 0 01-1-1h-3zm1 2h1V3h-1v1zM8 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" /></svg>
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </div>
                             {editingReviewId === r.id ? (
