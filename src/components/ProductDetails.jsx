@@ -32,10 +32,43 @@ const iconMap = {
 
 const getIcon = (icon) => iconMap[icon] || icon || "ℹ️";
 
-const formatScore = (score) => {
-  const value = typeof score === "number" ? score : Number(score);
-  if (Number.isNaN(value)) return "0";
-  return value <= 10 ? Math.round(value * 10) : Math.round(value);
+const getAssessmentTone = (value, isIngredientSafety = false) => {
+  const normalizedValue = `${value || ""}`.toLowerCase();
+  const tones = {
+    green: {
+      card: "border-green-200 bg-green-50",
+      icon: "bg-green-100 text-green-600",
+      value: "text-green-700",
+      badge: "bg-green-100 text-green-700",
+      dot: "bg-green-500",
+    },
+    amber: {
+      card: "border-amber-200 bg-amber-50",
+      icon: "bg-amber-100 text-amber-600",
+      value: "text-amber-700",
+      badge: "bg-amber-100 text-amber-700",
+      dot: "bg-amber-500",
+    },
+    red: {
+      card: "border-red-200 bg-red-50",
+      icon: "bg-red-100 text-red-600",
+      value: "text-red-700",
+      badge: "bg-red-100 text-red-700",
+      dot: "bg-red-500",
+    },
+    neutral: {
+      card: "border-gray-200 bg-gray-50",
+      icon: "bg-gray-100 text-gray-500",
+      value: "text-gray-600",
+      badge: "bg-gray-100 text-gray-600",
+      dot: "bg-gray-500",
+    },
+  };
+
+  if (normalizedValue === "high") return tones[isIngredientSafety ? "red" : "green"];
+  if (normalizedValue === "moderate") return tones.amber;
+  if (normalizedValue === "low") return tones[isIngredientSafety ? "green" : "red"];
+  return tones.neutral;
 };
 
 /**
@@ -244,9 +277,8 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
     }
   };
 
-  const scorePercent = formatScore(product?.transparencyScore ?? product?.transparency ?? 0);
   const title = product?.productName || product?.name || "Product Details";
-  const description = product?.description || product?.summary || "A detailed view of the product's transparency and ingredient profile.";
+  const description = product?.description || product?.summary || "";
   const category = product?.category || product?.categoryName || "Skincare";
   const ethicalScore = typeof product?.ethicalScore === "number" ? product.ethicalScore : product?.ethicalScore ?? null;
 
@@ -262,38 +294,15 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
   const ingredientList = Array.isArray(product?.ingredients)
     ? product.ingredients
     : [];
-
-  const transparencyAnalysis = product?.transparencyAnalysis || {};
-  const transparencyHighlights = Array.isArray(transparencyAnalysis.scoreHighReasons)
-    ? transparencyAnalysis.scoreHighReasons
-    : [];
-  const transparencyRisks = Array.isArray(transparencyAnalysis.improvementAreas)
-    ? transparencyAnalysis.improvementAreas
-    : [];
-  const scoreBreakdown = transparencyAnalysis.scoreBreakdown || {};
-  const transparencyBreakdown = [
-    {
-      label: "Ingredient Transparency",
-      value: Number(scoreBreakdown.ingredientTransparency) || 0,
-    },
-    {
-      label: "Ethical Certifications",
-      value: Number(scoreBreakdown.ethicalCertifications) || 0,
-    },
-    {
-      label: "Manufacturing Info",
-      value: Number(scoreBreakdown.manufacturingInfo) || 0,
-    },
-    {
-      label: "Sourcing Transparency",
-      value: Number(scoreBreakdown.sourcingTransparency) || 0,
-    },
-  ];
-
-  const hasTransparencyData =
-    transparencyHighlights.length > 0 ||
-    transparencyRisks.length > 0 ||
-    transparencyBreakdown.some((item) => item.value > 0);
+  const productInsights = product?.productInsights || {};
+  const findings = Array.isArray(productInsights.findings) ? productInsights.findings : [];
+  const sources = Array.isArray(productInsights.sources) ? productInsights.sources : [];
+  const ingredientSafety = product?.ingredientSafety || "";
+  const informationQuality = product?.informationQuality || "";
+  const evidenceQuality = product?.evidenceQuality || "";
+  const ingredientSafetyTone = getAssessmentTone(ingredientSafety, true);
+  const informationQualityTone = getAssessmentTone(informationQuality);
+  const evidenceQualityTone = getAssessmentTone(evidenceQuality);
 
   const statusBadgeStyles = {
     Safe: "bg-green-100 text-green-900 border border-green-200",
@@ -304,7 +313,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
 
   const tabs = [
     { id: "ingredients", label: "Ingredients" },
-    { id: "transparency", label: "Transparency Analysis" },
+    { id: "insights", label: "Product Insights" },
     { id: "reviews", label: "Community Reviews" },
   ];
 
@@ -350,19 +359,43 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
             {/* Product Title */}
             <h2 className="text-4xl font-bold text-gray-900 mb-5">{title}</h2>
 
-            {/* Transparency Score Badge */}
-            <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-4 mb-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-green-600 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
-              </svg>
-              <div>
-                <div className="text-3xl font-bold text-green-700">{scorePercent}%</div>
-                <div className="text-sm font-medium text-green-600">Transparency Score</div>
+            {/* Product assessment tiles */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+              <div className={`min-h-32.25 flex flex-col items-center justify-center rounded-xl border px-2 py-4 text-center ${ingredientSafetyTone.card}`}>
+                <span className={`mb-3 flex h-9 w-9 items-center justify-center rounded-full ${ingredientSafetyTone.icon}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                </span>
+                <span className={`text-sm font-semibold ${ingredientSafetyTone.value}`}>{ingredientSafety ? `${ingredientSafety} concern` : "Not provided"}</span>
+                <span className="mt-2 text-xs text-gray-600">Ingredient Safety</span>
+              </div>
+              <div className={`min-h-32.25 flex flex-col items-center justify-center rounded-xl border px-2 py-4 text-center ${informationQualityTone.card}`}>
+                <span className={`mb-3 flex h-9 w-9 items-center justify-center rounded-full ${informationQualityTone.icon}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 3 14.8 5l3.4.4.4 3.4 2 2.8-2 2.8-.4 3.4-3.4.4-2.8 2-2.8-2-3.4-.4-.4-3.4-2-2.8 2-2.8.4-3.4L9.2 5 12 3z" />
+                    <path d="m9.5 12 1.7 1.7 3.5-3.5" />
+                  </svg>
+                </span>
+                <span className={`text-sm font-semibold ${informationQualityTone.value}`}>{informationQuality || "Not provided"}</span>
+                <span className="mt-2 text-xs text-gray-600">Information Quality</span>
+              </div>
+              <div className={`min-h-32.25 flex flex-col items-center justify-center rounded-xl border px-2 py-4 text-center ${evidenceQualityTone.card}`}>
+                <span className={`mb-3 flex h-9 w-9 items-center justify-center rounded-full ${evidenceQualityTone.icon}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M9 3h6" />
+                    <path d="M10 3v7.5L4.8 19a1.5 1.5 0 0 0 1.3 2.2h11.8a1.5 1.5 0 0 0 1.3-2.2L14 10.5V3" />
+                    <path d="M7 16h10" />
+                  </svg>
+                </span>
+                <span className={`text-sm font-semibold ${evidenceQualityTone.value}`}>{evidenceQuality || "Not provided"}</span>
+                <span className="mt-2 text-xs text-gray-600">Evidence Quality</span>
               </div>
             </div>
 
             {/* Product Description */}
-            <p className="text-base text-gray-700 leading-relaxed mb-7">{description}</p>
+            {description && <p className="text-base text-gray-700 leading-relaxed mb-7">{description}</p>}
 
             {/* Ethical Summary Heading */}
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Ethical Summary</h3>
@@ -443,6 +476,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                       {ingredientList.length > 0 ? (
                         ingredientList.map((ingredient) => {
                           const safetyStatus = ingredient.safetyStatus || ingredient.status || "Safe";
+                          const inciValue = ingredient.inciName || ingredient.name;
                           return (
                             <div
                               key={`${ingredient.name}-${safetyStatus}`}
@@ -458,6 +492,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                                   {safetyStatus}
                                 </span>
                               </div>
+                              <p className="mt-1 font-mono text-xs text-gray-500">INCI: {inciValue}</p>
                               {ingredient.description && (
                                 <p className="mt-3 text-base text-gray-700">{ingredient.description}</p>
                               )}
@@ -471,64 +506,86 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                   </div>
                 )}
 
-                {activeTab === "transparency" && (
-                  <div className="space-y-6 w-full lg:w-[60%]">
-                    <h3 className="text-3xl font-semibold text-gray-900 mb-4">Transparency Analysis</h3>
+                {activeTab === "insights" && (
+                  <div className="w-full space-y-5">
+                    <h3 className="text-2xl font-semibold text-gray-900">Product Insights</h3>
 
-                    {hasTransparencyData ? (
-                      <>
-                        {transparencyHighlights.length > 0 && (
-                          <div className="rounded-3xl border border-green-200 bg-green-50 p-6 shadow-sm">
-                            <p className="text-xl font-semibold text-green-900 mb-4">What makes this score high?</p>
-                            <ul className="space-y-3 text-base text-green-900">
-                              {transparencyHighlights.map((item) => (
-                                <li key={item} className="flex gap-3 items-start">
-                                  <span>✓</span>
-                                  <span>{item}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {transparencyRisks.length > 0 && (
-                          <div className="rounded-3xl border border-yellow-200 bg-yellow-50 p-6 shadow-sm">
-                            <p className="text-xl font-semibold text-yellow-900 mb-4">Areas for improvement</p>
-                            <ul className="space-y-3 text-base text-yellow-900">
-                              {transparencyRisks.map((item) => (
-                                <li key={item} className="flex gap-3 items-start">
-                                  <span>⚠️</span>
-                                  <span>{item}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {transparencyBreakdown.some((item) => item.value > 0) && (
-                          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <p className="text-xl font-semibold text-slate-900 mb-4">Score breakdown</p>
-                            <div className="space-y-4">
-                              {transparencyBreakdown.map((item) => (
-                                <div key={item.label}>
-                                  <div className="flex items-center justify-between text-base text-slate-700 mb-2">
-                                    <span>{item.label}</span>
-                                    <span>{item.value}%</span>
-                                  </div>
-                                  <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
-                                    <div className="h-full rounded-full bg-green-600" style={{ width: `${item.value}%` }} />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <p className="text-base text-gray-600">No transparency analysis data is available for this product.</p>
+                    <section className="overflow-hidden rounded-xl border border-green-200">
+                      <div className="flex items-center justify-between gap-4 border-b border-green-200 bg-green-50 px-5 py-4">
+                        <div className="flex items-center gap-3 font-semibold text-gray-900">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M12 3 14.8 5l3.4.4.4 3.4 2 2.8-2 2.8-.4 3.4-3.4.4-2.8 2-2.8-2-3.4-.4-.4-3.4-2-2.8 2-2.8.4-3.4L9.2 5 12 3z" />
+                            <path d="m9.5 12 1.7 1.7 3.5-3.5" />
+                          </svg>
+                          <span>Information Quality</span>
+                        </div>
+                        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${informationQualityTone.badge}`}>
+                          <span className={`h-2 w-2 rounded-full ${informationQualityTone.dot}`} />
+                          {informationQuality || "Not provided"}
+                        </span>
                       </div>
-                    )}
+                      {productInsights.informationQualitySummary && (
+                        <p className="px-5 py-4 text-sm leading-6 text-gray-600">{productInsights.informationQualitySummary}</p>
+                      )}
+                    </section>
+
+                    <section className="overflow-hidden rounded-xl border border-amber-200">
+                      <div className="flex items-center justify-between gap-4 border-b border-amber-200 bg-amber-50 px-5 py-4">
+                        <div className="flex items-center gap-3 font-semibold text-gray-900">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M9 3h6" />
+                            <path d="M10 3v7.5L4.8 19a1.5 1.5 0 0 0 1.3 2.2h11.8a1.5 1.5 0 0 0 1.3-2.2L14 10.5V3" />
+                            <path d="M7 16h10" />
+                          </svg>
+                          <span>Evidence Quality</span>
+                        </div>
+                        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${evidenceQualityTone.badge}`}>
+                          <span className={`h-2 w-2 rounded-full ${evidenceQualityTone.dot}`} />
+                          {evidenceQuality || "Not provided"}
+                        </span>
+                      </div>
+                      {productInsights.evidenceQualitySummary && (
+                        <p className="px-5 py-4 text-sm leading-6 text-gray-600">{productInsights.evidenceQualitySummary}</p>
+                      )}
+                    </section>
+
+                    <section className="overflow-hidden rounded-xl border border-gray-200">
+                      <h4 className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4 font-semibold text-gray-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z" />
+                        </svg>
+                        What we found
+                      </h4>
+                      {findings.length > 0 ? (
+                        <ul className="space-y-3 px-5 py-4 text-sm text-gray-600">
+                          {findings.map((finding, index) => (
+                            <li key={`${finding}-${index}`} className="flex items-start gap-3">
+                              <span className="text-green-500">✓</span>
+                              <span>{finding}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="px-5 py-4 text-sm text-gray-500">No findings provided.</p>
+                      )}
+                    </section>
+
+                    <section className="overflow-hidden rounded-xl border border-gray-200">
+                      <h4 className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4 font-semibold text-gray-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <circle cx="11" cy="11" r="8" />
+                          <path d="m21 21-4.35-4.35" />
+                        </svg>
+                        Sources
+                      </h4>
+                      <div className="flex flex-wrap gap-2 px-5 py-4">
+                        {sources.length > 0 ? sources.map((source, index) => (
+                          <span key={`${source}-${index}`} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                            {source}
+                          </span>
+                        )) : <p className="text-sm text-gray-500">No sources provided.</p>}
+                      </div>
+                    </section>
                   </div>
                 )}
 
