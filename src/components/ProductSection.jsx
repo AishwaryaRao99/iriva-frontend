@@ -22,6 +22,7 @@ export default function ProductSection({ title, products = [], onViewAll, onProd
   const [errorMessage, setErrorMessage] = useState("");
   const [errorType, setErrorType] = useState(""); // "connectivity" or "product_not_found"
   const [expandedProducts, setExpandedProducts] = useState(null);
+  const visibleProducts = expandedProducts ?? products.slice(0, 3);
 
   const handleViewAll = async () => {
     setLoading(true);
@@ -75,8 +76,8 @@ export default function ProductSection({ title, products = [], onViewAll, onProd
       ) : null}
 
       {/* Product Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-        {(expandedProducts ?? products).map((product) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+        {visibleProducts.map((product) => (
           <ProductCard key={product.name ?? product.id} {...product} onInteraction={onProductInteraction} onViewDetails={onViewDetails} />
         ))}
       </div>

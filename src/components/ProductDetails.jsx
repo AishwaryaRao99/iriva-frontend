@@ -32,7 +32,7 @@ const iconMap = {
 
 const getIcon = (icon) => iconMap[icon] || icon || "ℹ️";
 
-const getAssessmentTone = (value, isIngredientSafety = false) => {
+const getAssessmentTone = (value) => {
   const normalizedValue = `${value || ""}`.toLowerCase();
   const tones = {
     green: {
@@ -65,9 +65,9 @@ const getAssessmentTone = (value, isIngredientSafety = false) => {
     },
   };
 
-  if (normalizedValue === "high") return tones[isIngredientSafety ? "red" : "green"];
+  if (normalizedValue === "high") return tones.green;
   if (normalizedValue === "moderate") return tones.amber;
-  if (normalizedValue === "low") return tones[isIngredientSafety ? "green" : "red"];
+  if (normalizedValue === "low") return tones.red;
   return tones.neutral;
 };
 
@@ -300,7 +300,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
   const ingredientSafety = product?.ingredientSafety || "";
   const informationQuality = product?.informationQuality || "";
   const evidenceQuality = product?.evidenceQuality || "";
-  const ingredientSafetyTone = getAssessmentTone(ingredientSafety, true);
+  const ingredientSafetyTone = getAssessmentTone(ingredientSafety);
   const informationQualityTone = getAssessmentTone(informationQuality);
   const evidenceQualityTone = getAssessmentTone(evidenceQuality);
 
@@ -368,7 +368,7 @@ export default function ProductDetails({ product, onClose, backLabel, isAuthenti
                     <path d="m9 12 2 2 4-4" />
                   </svg>
                 </span>
-                <span className={`text-sm font-semibold ${ingredientSafetyTone.value}`}>{ingredientSafety ? `${ingredientSafety} concern` : "Not provided"}</span>
+                <span className={`text-sm font-semibold ${ingredientSafetyTone.value}`}>{ingredientSafety || "Not provided"}</span>
                 <span className="mt-2 text-xs text-gray-600">Ingredient Safety</span>
               </div>
               <div className={`min-h-32.25 flex flex-col items-center justify-center rounded-xl border px-2 py-4 text-center ${informationQualityTone.card}`}>
