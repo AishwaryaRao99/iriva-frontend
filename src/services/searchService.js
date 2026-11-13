@@ -2,6 +2,8 @@
  * Search Service
  * Handles API calls for searching and fetching product data.
  */
+import { getCsrfToken } from "../config/csrf";
+
 const API_BASE_URL = "http://localhost:8080/transparency-portal/api/v1/productsapi";
 const SEARCH_ENDPOINT = `${API_BASE_URL}/paginated/search`;
 const SEARCH_BRAND_ENDPOINT = `${API_BASE_URL}/paginated/search-brand`;
@@ -99,9 +101,17 @@ const fetchJson = async (endpoint, options = {}) => {
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_DURATION_MS);
 
   try {
+    const method = (options.method || "GET").toUpperCase();
+    const headers = { ...options.headers };
+
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+      headers["X-XSRF-TOKEN"] = await getCsrfToken();
+    }
+
     const response = await fetch(endpoint, {
       ...DEFAULT_FETCH_OPTIONS,
       ...options,
+      headers,
       signal: controller.signal,
     });
 
