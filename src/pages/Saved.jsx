@@ -13,7 +13,7 @@ export default function Saved({ products = [], loading = false, error = "", onVi
           <p className="text-sm text-gray-600 mb-6">{(products?.length ?? 0)} products saved</p>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((p) => (
             <div key={p.id || p.name} className="relative">
               <div className="absolute right-3 top-3 z-10">
@@ -31,6 +31,12 @@ export default function Saved({ products = [], loading = false, error = "", onVi
                 descriptionMaxLength={120}
                 imageUrl={p.imageUrl || p.image}
                 transparencyScore={p.transparencyScore ?? p.transparency}
+                company={p.company}
+                brand={p.brand}
+                manufacturer={p.manufacturer}
+                ingredientSafety={p.ingredientSafety}
+                informationQuality={p.informationQuality}
+                evidenceQuality={p.evidenceQuality}
                 onViewDetails={onViewDetails}
                 onInteraction={() => {}}
               />

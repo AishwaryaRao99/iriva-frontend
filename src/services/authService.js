@@ -1,3 +1,4 @@
+import { getCsrfToken } from "../config/csrf";
 const AUTH_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}/auth`;
 const GOOGLE_OAUTH_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}/oauth2/authorization/google`;
 
@@ -35,7 +36,22 @@ const handleResponse = async (response) => {
 };
 
 const sendRequest = async (endpoint, init = {}) => {
-  const response = await fetch(`${AUTH_BASE_URL}/${endpoint}`, init);
+  const method = (init.method || "GET").toUpperCase();
+
+  const headers = {
+    ...init.headers,
+  };
+
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    const csrfToken = await getCsrfToken();
+    headers["X-XSRF-TOKEN"] = csrfToken;
+  }
+
+  const response = await fetch(`${AUTH_BASE_URL}/${endpoint}`, {
+    ...init,
+    headers,
+  });
+
   return handleResponse(response);
 };
 

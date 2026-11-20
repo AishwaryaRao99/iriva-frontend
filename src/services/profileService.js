@@ -1,14 +1,23 @@
+import { getCsrfToken } from "../config/csrf";
+
 const API_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}/api/v1/profile`;
 
 const request = async (endpoint = "", options = {}) => {
+  const method = (options.method || "GET").toUpperCase();
+  const headers = {
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    headers["X-XSRF-TOKEN"] = await getCsrfToken();
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     credentials: "include",
     mode: "cors",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
     ...options,
+    headers,
   });
 
   const text = await response.text();
