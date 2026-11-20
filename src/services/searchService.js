@@ -3,14 +3,13 @@
  * Handles API calls for searching and fetching product data.
  */
 import { getCsrfToken } from "../config/csrf";
-
-const API_BASE_URL = "http://localhost:8080/transparency-portal/api/v1/productsapi";
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}/api/v1/productsapi`;
 const SEARCH_ENDPOINT = `${API_BASE_URL}/paginated/search`;
 const SEARCH_BRAND_ENDPOINT = `${API_BASE_URL}/paginated/search-brand`;
 const ALL_PRODUCTS_ENDPOINT = `${API_BASE_URL}/paginated/all`;
 const CATEGORY_PRODUCTS_ENDPOINT = `${API_BASE_URL}/paginated/by-category`;
 const CATEGORIES_ENDPOINT = `${API_BASE_URL}/categories`;
-const TIMEOUT_DURATION_MS = 10000;
+const TIMEOUT_DURATION_MS = 20000;
 const DEFAULT_FETCH_OPTIONS = {
   credentials: "include",
   mode: "cors",
