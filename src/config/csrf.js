@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8080/transparency-portal";
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}`;
 
 export const getCsrfToken = async () => {
   // Ensure the CSRF cookie has been issued
