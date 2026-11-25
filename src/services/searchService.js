@@ -81,7 +81,7 @@ const parseErrorResponse = async (response) => {
     }
 
     const values = Object.values(body).flatMap((value) =>
-      Array.isArray(value) ? value : [value]
+      Array.isArray(value) ? value : [value],
     );
     return values.filter(Boolean).join("; ") || text;
   } catch {
@@ -104,7 +104,8 @@ const fetchJson = async (endpoint, options = {}) => {
     const headers = { ...options.headers };
 
     if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-      headers["X-XSRF-TOKEN"] = await getCsrfToken();
+      const csrfToken = await getCsrfToken();
+      headers["X-XSRF-TOKEN"] = csrfToken;
     }
 
     const response = await fetch(endpoint, {
@@ -126,7 +127,9 @@ const fetchJson = async (endpoint, options = {}) => {
         throw error;
       }
 
-      const message = fallbackText || `Server error ${response.status}: ${response.statusText}`;
+      const message =
+        fallbackText ||
+        `Server error ${response.status}: ${response.statusText}`;
       const error = new Error(message);
       error.status = response.status;
       error.raw = fallbackText;
@@ -138,12 +141,14 @@ const fetchJson = async (endpoint, options = {}) => {
     clearTimeout(timeoutId);
 
     if (error.name === "AbortError") {
-      throw new Error(`Request timed out after ${TIMEOUT_DURATION_MS / 1000} seconds.`);
+      throw new Error(
+        `Request timed out after ${TIMEOUT_DURATION_MS / 1000} seconds.`,
+      );
     }
 
     if (error instanceof TypeError) {
       throw new Error(
-        "Cannot connect to server. Please check your internet connection or try again later."
+        "Cannot connect to server. Please check your internet connection or try again later.",
       );
     }
 
@@ -160,14 +165,14 @@ export const searchProducts = async (query, pageRequest = {}) => {
     `${SEARCH_ENDPOINT}?name=${encodeURIComponent(query)}&${buildPageQuery(pageRequest)}`,
     {
       method: "GET",
-    }
+    },
   );
 
   return normalizePageResponse(response);
 };
 
 export const searchProductsByBrand = async (brand, pageRequest = {}) => {
-  if (!brand || `${brand}`.trim() === "") {
+  if (!brand || String(brand).trim() === "") {
     throw new Error("Brand is required to search products by brand.");
   }
 
@@ -175,22 +180,25 @@ export const searchProductsByBrand = async (brand, pageRequest = {}) => {
     `${SEARCH_BRAND_ENDPOINT}?brand=${encodeURIComponent(brand)}&${buildPageQuery(pageRequest)}`,
     {
       method: "GET",
-    }
+    },
   );
 
   return normalizePageResponse(response);
 };
 
 export const getAllProducts = async (pageRequest = {}) => {
-  const response = await fetchJson(`${ALL_PRODUCTS_ENDPOINT}?${buildPageQuery(pageRequest)}`, {
-    method: "GET",
-  });
+  const response = await fetchJson(
+    `${ALL_PRODUCTS_ENDPOINT}?${buildPageQuery(pageRequest)}`,
+    {
+      method: "GET",
+    },
+  );
 
   return normalizePageResponse(response);
 };
 
 export const getProductsByCategory = async (category, pageRequest = {}) => {
-  if (!category || `${category}`.trim() === "") {
+  if (!category || String(category).trim() === "") {
     throw new Error("Category is required to fetch products.");
   }
 
@@ -198,7 +206,7 @@ export const getProductsByCategory = async (category, pageRequest = {}) => {
     `${CATEGORY_PRODUCTS_ENDPOINT}?category=${encodeURIComponent(category)}&${buildPageQuery(pageRequest)}`,
     {
       method: "GET",
-    }
+    },
   );
 
   return normalizePageResponse(response);
@@ -221,7 +229,7 @@ export const getCategories = async () => {
 };
 
 export const getProductById = async (productId) => {
-  if (!productId || `${productId}`.trim() === "") {
+  if (!productId || String(productId).trim() === "") {
     throw new Error("Product id is required to fetch the product details.");
   }
 
@@ -231,29 +239,39 @@ export const getProductById = async (productId) => {
 };
 
 export const getProductReviews = async (productId) => {
-  if (!productId || `${productId}`.trim() === "") {
+  if (!productId || String(productId).trim() === "") {
     throw new Error("Product id is required to fetch product reviews.");
   }
 
-  const response = await fetchJson(`${API_BASE_URL}/${encodeURIComponent(productId)}/reviews`, {
-    method: "GET",
-  });
+  const response = await fetchJson(
+    `${API_BASE_URL}/${encodeURIComponent(productId)}/reviews`,
+    {
+      method: "GET",
+    },
+  );
 
   return Array.isArray(response) ? response : [];
 };
 
 export const getReviewTags = async (productId) => {
-  if (!productId || `${productId}`.trim() === "") {
+  if (!productId || String(productId).trim() === "") {
     throw new Error("Product id is required to fetch review tags.");
   }
 
-  const response = await fetchJson(`${API_BASE_URL}/${encodeURIComponent(productId)}/review-tags`, {
-    method: "GET",
-  });
+  const response = await fetchJson(
+    `${API_BASE_URL}/${encodeURIComponent(productId)}/review-tags`,
+    {
+      method: "GET",
+    },
+  );
 
-  const tags = Array.isArray(response) ? response : response?.tags || response?.data || [];
+  const tags = Array.isArray(response)
+    ? response
+    : response?.tags || response?.data || [];
   return tags
-    .map((tag) => (typeof tag === "string" ? tag : tag?.name || tag?.label || tag?.tag))
+    .map((tag) =>
+      typeof tag === "string" ? tag : tag?.name || tag?.label || tag?.tag,
+    )
     .filter(Boolean);
 };
 

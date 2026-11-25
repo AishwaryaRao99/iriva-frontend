@@ -1,6 +1,11 @@
-import { getCsrfToken } from "../config/csrf";
-const AUTH_BASE_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}/auth`;
-const GOOGLE_OAUTH_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal"}/oauth2/authorization/google`;
+import { getCsrfToken, clearCsrfToken } from "../config/csrf";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/transparency-portal";
+
+const AUTH_BASE_URL = `${API_BASE_URL}/auth`;
+
+const GOOGLE_OAUTH_URL = `${API_BASE_URL}/oauth2/authorization/google`;
 
 const DEFAULT_FETCH_OPTIONS = {
   credentials: "include",
@@ -25,10 +30,14 @@ const handleResponse = async (response) => {
 
   if (!response.ok) {
     const message = body?.message || body?.error || body || response.statusText;
-    const err = new Error(message || `Request failed with status ${response.status}`);
-    // Attach parsed body and status for richer client-side handling
+
+    const err = new Error(
+      message || `Request failed with status ${response.status}`,
+    );
+
     err.status = response.status;
     err.body = body;
+
     throw err;
   }
 
@@ -39,15 +48,18 @@ const sendRequest = async (endpoint, init = {}) => {
   const method = (init.method || "GET").toUpperCase();
 
   const headers = {
+    ...DEFAULT_FETCH_OPTIONS.headers,
     ...init.headers,
   };
 
+  // Attach CSRF token to state-changing requests
   if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
     const csrfToken = await getCsrfToken();
     headers["X-XSRF-TOKEN"] = csrfToken;
   }
 
   const response = await fetch(`${AUTH_BASE_URL}/${endpoint}`, {
+    ...DEFAULT_FETCH_OPTIONS,
     ...init,
     headers,
   });
@@ -61,11 +73,11 @@ const validateAuthInputs = (email, password) => {
   }
 };
 
+// LOGIN
 export const login = async (email, password) => {
   validateAuthInputs(email, password);
 
-  return sendRequest("login", {
-    ...DEFAULT_FETCH_OPTIONS,
+  const result = await sendRequest("login", {
     method: "POST",
     body: JSON.stringify({
       username: email,
@@ -73,13 +85,24 @@ export const login = async (email, password) => {
       password,
     }),
   });
+
+  // Login may clear the previous CSRF token
+  clearCsrfToken();
+
+  return result;
 };
 
-export const register = async ({ username, displayName, email, password, confirmPassword }) => {
+// REGISTER
+export const register = async ({
+  username,
+  displayName,
+  email,
+  password,
+  confirmPassword,
+}) => {
   validateAuthInputs(email, password);
 
   return sendRequest("register", {
-    ...DEFAULT_FETCH_OPTIONS,
     method: "POST",
     body: JSON.stringify({
       username,
@@ -91,19 +114,26 @@ export const register = async ({ username, displayName, email, password, confirm
   });
 };
 
-export const getGoogleAuthorizationUrl = () => GOOGLE_OAUTH_URL;
-
-export const logout = async () => {
-  return sendRequest("logout", {
-    ...DEFAULT_FETCH_OPTIONS,
-    method: "POST",
-  });
+// GOOGLE OAUTH
+export const getGoogleAuthorizationUrl = () => {
+  return GOOGLE_OAUTH_URL;
 };
 
+// LOGOUT
+export const logout = async () => {
+  const result = await sendRequest("logout", {
+    method: "POST",
+  });
 
+  // Clear cached CSRF token after successful logout
+  clearCsrfToken();
+
+  return result;
+};
+
+// CURRENT USER
 export const getCurrentUser = async () => {
   return sendRequest("me", {
-    ...DEFAULT_FETCH_OPTIONS,
     method: "GET",
   });
 };

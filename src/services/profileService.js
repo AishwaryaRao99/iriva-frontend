@@ -10,7 +10,8 @@ const request = async (endpoint = "", options = {}) => {
   };
 
   if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-    headers["X-XSRF-TOKEN"] = await getCsrfToken();
+    const csrfToken = await getCsrfToken();
+    headers["X-XSRF-TOKEN"] = csrfToken;
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -30,7 +31,9 @@ const request = async (endpoint = "", options = {}) => {
   }
 
   if (!response.ok) {
-    const error = new Error(body?.message || body?.error || body || response.statusText);
+    const error = new Error(
+      body?.message || body?.error || body || response.statusText,
+    );
     error.status = response.status;
     throw error;
   }
@@ -45,10 +48,14 @@ export const getSavedProductStatus = (productId) =>
   request(`/saved-products/${encodeURIComponent(productId)}`);
 
 export const saveProduct = (productId) =>
-  request(`/saved-products/${encodeURIComponent(productId)}`, { method: "POST" });
+  request(`/saved-products/${encodeURIComponent(productId)}`, {
+    method: "POST",
+  });
 
 export const removeSavedProduct = (productId) =>
-  request(`/saved-products/${encodeURIComponent(productId)}`, { method: "DELETE" });
+  request(`/saved-products/${encodeURIComponent(productId)}`, {
+    method: "DELETE",
+  });
 
 export const addReview = (productId, review) =>
   request(`/reviews/${encodeURIComponent(productId)}`, {
